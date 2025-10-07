@@ -1,439 +1,686 @@
-"""
-classical_ml.py
-Module pour les algorithmes de Machine Learning classiques (scikit-learn)
-"""
-
-import numpy as np
+import streamlit as st
 import pandas as pd
-from sklearn.metrics import (
-    accuracy_score, precision_score, recall_score, f1_score,
-    confusion_matrix, classification_report,
-    mean_squared_error, mean_absolute_error, r2_score,
-    roc_auc_score, roc_curve
+import numpy as np
+import plotly.graph_objects as go
+import plotly.express as px
+from datetime import datetime
+import time
+import cv2
+from PIL import Image
+import io
+import os
+
+# Configuration de la page
+st.set_page_config(
+    page_title="Teachable Machine",
+    page_icon="🧠",
+    layout="wide"
 )
-import pickle
-import logging
-
-# Classification
-from sklearn.ensemble import (
-    RandomForestClassifier, GradientBoostingClassifier, 
-    AdaBoostClassifier, ExtraTreesClassifier
-)
-from sklearn.linear_model import LogisticRegression, RidgeClassifier
-from sklearn.svm import SVC
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis, QuadraticDiscriminantAnalysis
-
-# Regression
-from sklearn.ensemble import (
-    RandomForestRegressor, GradientBoostingRegressor,
-    AdaBoostRegressor, ExtraTreesRegressor
-)
-from sklearn.linear_model import (
-    LinearRegression, Ridge, Lasso, ElasticNet,
-    BayesianRidge, HuberRegressor
-)
-from sklearn.svm import SVR
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.tree import DecisionTreeRegressor
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
-class ClassicalMLTrainer:
-    """
-    Classe pour entraîner et évaluer des modèles ML classiques
-    """
-    
-    def __init__(self, problem_type='classification'):
-        """
-        Initialise le trainer
-        
-        Args:
-            problem_type: 'classification' ou 'regression'
-        """
-        self.problem_type = problem_type.lower()
-        self.models = {}
-        self.results = {}
-        self.best_model_name = None
-        self.best_model = None
-        
-        if self.problem_type not in ['classification', 'regression']:
-            raise ValueError("problem_type doit être 'classification' ou 'regression'")
-    
-    def get_available_models(self):
-        """
-        Retourne la liste des modèles disponibles selon le type de problème
-        
-        Returns:
-            dict: Dictionnaire {nom: modèle}
-        """
-        if self.problem_type == 'classification':
-            return {
-                'Random Forest': RandomForestClassifier(random_state=42, n_estimators=100),
-                'Logistic Regression': LogisticRegression(random_state=42, max_iter=1000),
-                'SVM': SVC(random_state=42, probability=True),
-                'KNN': KNeighborsClassifier(n_neighbors=5),
-                'Decision Tree': DecisionTreeClassifier(random_state=42),
-                'Gradient Boosting': GradientBoostingClassifier(random_state=42),
-                'AdaBoost': AdaBoostClassifier(random_state=42),
-                'Naive Bayes': GaussianNB(),
-                'Extra Trees': ExtraTreesClassifier(random_state=42, n_estimators=100),
-                'Linear Discriminant': LinearDiscriminantAnalysis(),
-                'Quadratic Discriminant': QuadraticDiscriminantAnalysis(),
-                'Ridge Classifier': RidgeClassifier(random_state=42)
-            }
-        else:  # regression
-            return {
-                'Random Forest': RandomForestRegressor(random_state=42, n_estimators=100),
-                'Linear Regression': LinearRegression(),
-                'Ridge': Ridge(random_state=42),
-                'Lasso': Lasso(random_state=42),
-                'ElasticNet': ElasticNet(random_state=42),
-                'SVR': SVR(),
-                'KNN': KNeighborsRegressor(n_neighbors=5),
-                'Decision Tree': DecisionTreeRegressor(random_state=42),
-                'Gradient Boosting': GradientBoostingRegressor(random_state=42),
-                'AdaBoost': AdaBoostRegressor(random_state=42),
-                'Extra Trees': ExtraTreesRegressor(random_state=42, n_estimators=100),
-                'Bayesian Ridge': BayesianRidge(),
-                'Huber': HuberRegressor()
-            }
-    
-    def train_single_model(self, model_name, X_train, y_train, X_test, y_test):
-        """
-        Entraîne un seul modèle
-        
-        Args:
-            model_name: Nom du modèle
-            X_train, y_train: Données d'entraînement
-            X_test, y_test: Données de test
-            
-        Returns:
-            dict: Résultats du modèle
-        """
-        available_models = self.get_available_models()
-        
-        if model_name not in available_models:
-            raise ValueError(f"Modèle '{model_name}' non disponible")
-        
-        try:
-            logger.info(f"Entraînement de {model_name}...")
-            
-            model = available_models[model_name]
-            model.fit(X_train, y_train)
-            
-            # Prédictions
-            y_pred = model.predict(X_test)
-            y_train_pred = model.predict(X_train)
-            
-            # Calcul des métriques
-            metrics = self._calculate_metrics(y_test, y_pred, y_train, y_train_pred, model, X_test)
-            
-            # Stocker le modèle et les résultats
-            self.models[model_name] = model
-            result = {
-                'model': model,
-                'predictions': y_pred,
-                'train_predictions': y_train_pred,
-                'metrics': metrics
-            }
-            self.results[model_name] = result
-            
-            logger.info(f"{model_name} entraîné avec succès")
-            return result
-            
-        except Exception as e:
-            logger.error(f"Erreur lors de l'entraînement de {model_name}: {str(e)}")
-            return None
-    
-    def train_all_models(self, X_train, y_train, X_test, y_test, selected_models=None):
-        """
-        Entraîne plusieurs modèles
-        
-        Args:
-            X_train, y_train: Données d'entraînement
-            X_test, y_test: Données de test
-            selected_models: Liste des noms de modèles (None = tous)
-            
-        Returns:
-            dict: Résultats de tous les modèles
-        """
-        available_models = self.get_available_models()
-        
-        if selected_models is None:
-            selected_models = list(available_models.keys())
-        
-        logger.info(f"Entraînement de {len(selected_models)} modèles...")
-        
-        for model_name in selected_models:
-            self.train_single_model(model_name, X_train, y_train, X_test, y_test)
-        
-        # Identifier le meilleur modèle
-        self._identify_best_model()
-        
-        return self.results
-    
-    def _calculate_metrics(self, y_test, y_pred, y_train, y_train_pred, model, X_test):
-        """
-        Calcule les métriques selon le type de problème
-        
-        Args:
-            y_test: Vraies valeurs test
-            y_pred: Prédictions test
-            y_train: Vraies valeurs train
-            y_train_pred: Prédictions train
-            model: Modèle entraîné
-            X_test: Features test
-            
-        Returns:
-            dict: Métriques calculées
-        """
-        metrics = {}
-        
-        if self.problem_type == 'classification':
-            # Métriques de base
-            metrics['accuracy'] = accuracy_score(y_test, y_pred)
-            metrics['precision'] = precision_score(y_test, y_pred, average='weighted', zero_division=0)
-            metrics['recall'] = recall_score(y_test, y_pred, average='weighted', zero_division=0)
-            metrics['f1_score'] = f1_score(y_test, y_pred, average='weighted', zero_division=0)
-            
-            # Scores train (pour détecter overfitting)
-            metrics['train_accuracy'] = accuracy_score(y_train, y_train_pred)
-            
-            # Matrice de confusion
-            metrics['confusion_matrix'] = confusion_matrix(y_test, y_pred)
-            
-            # ROC AUC pour binaire ou multiclass
-            try:
-                if hasattr(model, 'predict_proba'):
-                    y_proba = model.predict_proba(X_test)
-                    if len(np.unique(y_test)) == 2:  # Binaire
-                        metrics['roc_auc'] = roc_auc_score(y_test, y_proba[:, 1])
-                    else:  # Multiclass
-                        metrics['roc_auc'] = roc_auc_score(y_test, y_proba, multi_class='ovr', average='weighted')
-            except:
-                metrics['roc_auc'] = None
-            
-        else:  # regression
-            metrics['r2_score'] = r2_score(y_test, y_pred)
-            metrics['mse'] = mean_squared_error(y_test, y_pred)
-            metrics['rmse'] = np.sqrt(mean_squared_error(y_test, y_pred))
-            metrics['mae'] = mean_absolute_error(y_test, y_pred)
-            
-            # Scores train
-            metrics['train_r2'] = r2_score(y_train, y_train_pred)
-            
-            # MAPE (Mean Absolute Percentage Error)
-            try:
-                metrics['mape'] = np.mean(np.abs((y_test - y_pred) / y_test)) * 100
-            except:
-                metrics['mape'] = None
-        
-        return metrics
-    
-    def _identify_best_model(self):
-        """
-        Identifie le meilleur modèle basé sur la métrique principale
-        """
-        if not self.results:
-            return
-        
-        if self.problem_type == 'classification':
-            metric_key = 'accuracy'
-        else:
-            metric_key = 'r2_score'
-        
-        best_score = -float('inf')
-        
-        for model_name, result in self.results.items():
-            score = result['metrics'].get(metric_key, -float('inf'))
-            if score > best_score:
-                best_score = score
-                self.best_model_name = model_name
-                self.best_model = result['model']
-        
-        logger.info(f"Meilleur modèle: {self.best_model_name} ({metric_key}={best_score:.4f})")
-    
-    def get_comparison_dataframe(self):
-        """
-        Retourne un DataFrame comparatif des modèles
-        
-        Returns:
-            DataFrame: Comparaison des métriques
-        """
-        if not self.results:
-            return None
-        
-        comparison_data = {}
-        
-        for model_name, result in self.results.items():
-            comparison_data[model_name] = result['metrics']
-        
-        df = pd.DataFrame(comparison_data).T
-        
-        # Trier par métrique principale
-        if self.problem_type == 'classification':
-            df = df.sort_values('accuracy', ascending=False)
-        else:
-            df = df.sort_values('r2_score', ascending=False)
-        
-        return df
-    
-    def get_feature_importance(self, model_name=None, feature_names=None):
-        """
-        Retourne l'importance des features si disponible
-        
-        Args:
-            model_name: Nom du modèle (None = meilleur modèle)
-            feature_names: Noms des features
-            
-        Returns:
-            DataFrame ou None
-        """
-        if model_name is None:
-            model_name = self.best_model_name
-        
-        if model_name not in self.models:
-            return None
-        
-        model = self.models[model_name]
-        
-        if hasattr(model, 'feature_importances_'):
-            importance = model.feature_importances_
-        elif hasattr(model, 'coef_'):
-            importance = np.abs(model.coef_).flatten()
-        else:
-            return None
-        
-        if feature_names is None:
-            feature_names = [f'feature_{i}' for i in range(len(importance))]
-        
-        df_importance = pd.DataFrame({
-            'feature': feature_names,
-            'importance': importance
-        }).sort_values('importance', ascending=False)
-        
-        return df_importance
-    
-    def predict(self, X, model_name=None):
-        """
-        Fait des prédictions avec un modèle
-        
-        Args:
-            X: Features
-            model_name: Nom du modèle (None = meilleur modèle)
-            
-        Returns:
-            Prédictions
-        """
-        if model_name is None:
-            model_name = self.best_model_name
-        
-        if model_name not in self.models:
-            raise ValueError(f"Modèle '{model_name}' non trouvé")
-        
-        return self.models[model_name].predict(X)
-    
-    def predict_proba(self, X, model_name=None):
-        """
-        Retourne les probabilités (classification uniquement)
-        
-        Args:
-            X: Features
-            model_name: Nom du modèle (None = meilleur modèle)
-            
-        Returns:
-            Probabilités ou None
-        """
-        if self.problem_type != 'classification':
-            return None
-        
-        if model_name is None:
-            model_name = self.best_model_name
-        
-        if model_name not in self.models:
-            raise ValueError(f"Modèle '{model_name}' non trouvé")
-        
-        model = self.models[model_name]
-        
-        if hasattr(model, 'predict_proba'):
-            return model.predict_proba(X)
-        
-        return None
-    
-    def save_model(self, model_name=None, path=None):
-        """
-        Sauvegarde un modèle
-        
-        Args:
-            model_name: Nom du modèle (None = meilleur modèle)
-            path: Chemin de sauvegarde
-        """
-        if model_name is None:
-            model_name = self.best_model_name
-        
-        if model_name not in self.models:
-            raise ValueError(f"Modèle '{model_name}' non trouvé")
-        
-        if path is None:
-            path = f"{model_name.replace(' ', '_').lower()}_model.pkl"
-        
-        with open(path, 'wb') as f:
-            pickle.dump(self.models[model_name], f)
-        
-        logger.info(f"Modèle sauvegardé: {path}")
-        return path
-    
-    def load_model(self, path, model_name='loaded_model'):
-        """
-        Charge un modèle sauvegardé
-        
-        Args:
-            path: Chemin du modèle
-            model_name: Nom à donner au modèle
-        """
-        with open(path, 'rb') as f:
-            model = pickle.load(f)
-        
-        self.models[model_name] = model
-        logger.info(f"Modèle chargé: {path}")
-    
-    def get_model_summary(self, model_name=None):
-        """
-        Retourne un résumé du modèle
-        
-        Args:
-            model_name: Nom du modèle (None = meilleur modèle)
-            
-        Returns:
-            dict: Résumé du modèle
-        """
-        if model_name is None:
-            model_name = self.best_model_name
-        
-        if model_name not in self.results:
-            return None
-        
-        result = self.results[model_name]
-        model = self.models[model_name]
-        
-        summary = {
-            'model_name': model_name,
-            'model_type': type(model).__name__,
-            'parameters': model.get_params(),
-            'metrics': result['metrics'],
-            'is_best': model_name == self.best_model_name
+def main():
+    # Initialisation des états de session
+    if 'step' not in st.session_state:
+        st.session_state.step = 1
+    if 'problem_type' not in st.session_state:
+        st.session_state.problem_type = ''
+    if 'data_loaded' not in st.session_state:
+        st.session_state.data_loaded = False
+    if 'target_column' not in st.session_state:
+        st.session_state.target_column = ''
+    if 'trained_models' not in st.session_state:
+        st.session_state.trained_models = {}
+    if 'selected_model' not in st.session_state:
+        st.session_state.selected_model = ''
+    if 'uploaded_data' not in st.session_state:
+        st.session_state.uploaded_data = None
+    if 'data_type' not in st.session_state:
+        st.session_state.data_type = None
+    if 'camera_capture' not in st.session_state:
+        st.session_state.camera_capture = None
+
+    # Algorithmes disponibles
+    algorithms = {
+        'classification': {
+            'Linear Models': ['Logistic Regression', 'SGD Classifier', 'Perceptron'],
+            'Tree Based': ['Decision Tree', 'Random Forest', 'Extra Trees', 'Gradient Boosting', 'AdaBoost', 'XGBoost',
+                           'LightGBM'],
+            'SVM': ['SVC (Linear)', 'SVC (RBF)', 'SVC (Poly)', 'Nu-SVC'],
+            'Naive Bayes': ['Gaussian NB', 'Multinomial NB', 'Bernoulli NB'],
+            'Neighbors': ['KNN', 'Radius Neighbors'],
+            'Neural Networks': ['MLP Classifier', 'Simple NN', 'Deep NN', 'CNN (Images)']
+        },
+        'regression': {
+            'Linear Models': ['Linear Regression', 'Ridge', 'Lasso', 'Elastic Net', 'SGD Regressor'],
+            'Tree Based': ['Decision Tree', 'Random Forest', 'Extra Trees', 'Gradient Boosting', 'AdaBoost', 'XGBoost',
+                           'LightGBM'],
+            'SVM': ['SVR (Linear)', 'SVR (RBF)', 'SVR (Poly)'],
+            'Neighbors': ['KNN Regressor', 'Radius Neighbors'],
+            'Neural Networks': ['MLP Regressor', 'Simple NN', 'Deep NN']
         }
-        
-        return summary
+    }
+
+    # Données de démonstration
+    demo_data = {
+        'classification': pd.DataFrame({
+            'feature1': [5.1, 4.9, 7.0, 6.4, 6.3],
+            'feature2': [3.5, 3.0, 3.2, 3.2, 3.3],
+            'feature3': [1.4, 1.4, 4.7, 4.5, 6.0],
+            'target': ['Class A', 'Class A', 'Class B', 'Class B', 'Class C']
+        }),
+        'regression': pd.DataFrame({
+            'feature1': [1.0, 2.0, 3.0, 4.0, 5.0],
+            'feature2': [2.0, 3.0, 4.0, 5.0, 6.0],
+            'feature3': [3.0, 4.0, 5.0, 6.0, 7.0],
+            'target': [10.5, 15.2, 20.1, 25.8, 30.3]
+        })
+    }
+
+    # Header
+    st.markdown("""
+        <style>
+        .main-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+            border-radius: 1rem;
+            color: white;
+            margin-bottom: 2rem;
+        }
+        .step-card {
+            background-color: #f8fafc;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 0.5rem 0;
+            border-left: 4px solid #6366f1;
+        }
+        .model-card {
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 0.5rem 0;
+        }
+        .metric-card {
+            background-color: #f1f5f9;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+        .upload-section {
+            border: 2px dashed #cbd5e1;
+            border-radius: 1rem;
+            padding: 2rem;
+            text-align: center;
+            margin: 1rem 0;
+            background-color: #f8fafc;
+        }
+        .tab-content {
+            padding: 1rem 0;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Header principal
+    col1, col2 = st.columns([1, 4])
+    with col1:
+        st.markdown("<h1 style='text-align: center;'>🧠</h1>", unsafe_allow_html=True)
+    with col2:
+        st.title("Teachable Machine")
+        st.subheader("Train ML models without writing code")
+
+    # Barre de progression
+    st.markdown("### Progress")
+    progress_cols = st.columns(3)
+    steps = [
+        {"num": 1, "label": "Upload Data", "icon": "📁"},
+        {"num": 2, "label": "Select Algorithm", "icon": "⚙️"},
+        {"num": 3, "label": "Train & Evaluate", "icon": "📈"}
+    ]
+
+    for idx, step_info in enumerate(steps):
+        with progress_cols[idx]:
+            is_active = st.session_state.step >= step_info["num"]
+            is_completed = st.session_state.step > step_info["num"]
+
+            bg_color = "#e0e7ff" if is_active else "#f1f5f9"
+            text_color = "#6366f1" if is_active else "#64748b"
+            icon = "✅" if is_completed else step_info["icon"]
+
+            st.markdown(f"""
+                <div style="background-color: {bg_color}; color: {text_color}; 
+                         padding: 1rem; border-radius: 0.5rem; text-align: center;">
+                    <div style="font-size: 1.5rem;">{icon}</div>
+                    <div style="font-weight: bold;">{step_info['label']}</div>
+                </div>
+            """, unsafe_allow_html=True)
+
+    # Étape 1: Upload des données
+    if st.session_state.step == 1:
+        st.markdown("## Upload Your Dataset")
+
+        # Onglets pour les différents types de données
+        tab1, tab2, tab3, tab4 = st.tabs(
+            ["📊 CSV/Excel Data", "🖼️ Image Dataset", "📷 Camera Capture", "🎯 Use Demo Data"])
+
+        with tab1:
+            st.markdown("### Upload CSV or Excel File")
+
+            uploaded_file = st.file_uploader(
+                "Choose a CSV or Excel file",
+                type=['csv', 'xlsx', 'xls'],
+                key="csv_uploader"
+            )
+
+            if uploaded_file is not None:
+                try:
+                    if uploaded_file.name.endswith('.csv'):
+                        df = pd.read_csv(uploaded_file)
+                    else:
+                        df = pd.read_excel(uploaded_file)
+
+                    st.session_state.uploaded_data = df
+                    st.session_state.data_type = 'tabular'
+
+                    st.success(f"✅ File uploaded successfully! Shape: {df.shape}")
+
+                    # Aperçu des données
+                    st.markdown("#### Data Preview")
+                    st.dataframe(df.head(), use_container_width=True)
+
+                    # Informations sur les données
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Rows", df.shape[0])
+                    with col2:
+                        st.metric("Columns", df.shape[1])
+                    with col3:
+                        st.metric("Data Type", "Tabular")
+
+                    # Sélection de la colonne cible
+                    st.markdown("#### Select Target Column")
+                    target_col = st.selectbox(
+                        "Choose the target variable column:",
+                        options=df.columns.tolist(),
+                        key="target_select"
+                    )
+
+                    st.session_state.target_column = target_col
+
+                    # Sélection du type de problème
+                    st.markdown("#### Select Problem Type")
+                    problem_type = st.radio(
+                        "What type of problem are you solving?",
+                        options=['classification', 'regression'],
+                        format_func=lambda x: "Classification" if x == 'classification' else "Regression",
+                        horizontal=True
+                    )
+
+                    st.session_state.problem_type = problem_type
+
+                    if st.button("Process Data →", type="primary", use_container_width=True):
+                        st.session_state.data_preview = df
+                        st.session_state.columns = df.columns.tolist()
+                        st.session_state.data_loaded = True
+                        st.session_state.step = 2
+                        st.rerun()
+
+                except Exception as e:
+                    st.error(f"Error reading file: {str(e)}")
+
+        with tab2:
+            st.markdown("### Upload Image Dataset")
+
+            uploaded_images = st.file_uploader(
+                "Choose image files",
+                type=['jpg', 'jpeg', 'png', 'bmp', 'tiff'],
+                accept_multiple_files=True,
+                key="image_uploader"
+            )
+
+            if uploaded_images:
+                st.success(f"✅ {len(uploaded_images)} images uploaded successfully!")
+
+                # Afficher un échantillon d'images
+                st.markdown("#### Image Preview")
+                cols = st.columns(4)
+                for idx, img_file in enumerate(uploaded_images[:8]):
+                    with cols[idx % 4]:
+                        image = Image.open(img_file)
+                        st.image(image, use_column_width=True, caption=f"Image {idx + 1}")
+
+                # Options pour les images
+                st.markdown("#### Image Processing Options")
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    image_size = st.selectbox(
+                        "Image Size",
+                        options=['64x64', '128x128', '224x224', '256x256', 'Original']
+                    )
+
+                with col2:
+                    model_type = st.selectbox(
+                        "Model Type for Images",
+                        options=['CNN (Simple)', 'CNN (Deep)', 'ResNet', 'VGG', 'Custom CNN']
+                    )
+
+                # Sélection du type de problème pour les images
+                st.markdown("#### Select Problem Type")
+                img_problem_type = st.radio(
+                    "What type of problem are you solving?",
+                    options=['classification', 'regression'],
+                    format_func=lambda x: "Classification" if x == 'classification' else "Regression",
+                    horizontal=True,
+                    key="img_problem"
+                )
+
+                if st.button("Process Images →", type="primary", use_container_width=True):
+                    # Simulation du traitement d'images
+                    with st.spinner("Processing images..."):
+                        time.sleep(2)
+
+                        # Créer des données simulées pour l'aperçu
+                        sample_data = pd.DataFrame({
+                            'image_name': [img.name for img in uploaded_images[:5]],
+                            'image_size': [image_size] * 5,
+                            'target': ['Class A', 'Class B', 'Class A', 'Class C', 'Class B']
+                        })
+
+                        st.session_state.uploaded_data = uploaded_images
+                        st.session_state.data_type = 'images'
+                        st.session_state.data_preview = sample_data
+                        st.session_state.problem_type = img_problem_type
+                        st.session_state.image_size = image_size
+                        st.session_state.model_type = model_type
+                        st.session_state.data_loaded = True
+                        st.session_state.step = 2
+                        st.rerun()
+
+        with tab3:
+            st.markdown("### Capture Images from Camera")
+
+            # Option 1: Upload d'images existantes de la caméra
+            st.markdown("#### Upload Camera Images")
+            camera_images = st.file_uploader(
+                "Upload images from your camera",
+                type=['jpg', 'jpeg', 'png'],
+                accept_multiple_files=True,
+                key="camera_uploader"
+            )
+
+            # Option 2: Capture en direct (simulée pour Streamlit Cloud)
+            st.markdown("#### Live Camera Capture")
+            st.info("💡 In a local environment, you can use OpenCV for live camera capture.")
+
+            # Simulation de capture
+            if st.button("📸 Simulate Camera Capture", use_container_width=True):
+                # Créer des images simulées
+                simulated_images = []
+                for i in range(4):
+                    # Créer une image colorée simulée
+                    img_array = np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8)
+                    img = Image.fromarray(img_array)
+                    simulated_images.append(img)
+
+                st.session_state.camera_capture = simulated_images
+                st.success("✅ 4 sample images captured!")
+
+                # Afficher les images capturées
+                st.markdown("#### Captured Images")
+                cols = st.columns(4)
+                for idx, img in enumerate(simulated_images):
+                    with cols[idx]:
+                        st.image(img, use_column_width=True, caption=f"Capture {idx + 1}")
+
+            if camera_images or st.session_state.camera_capture:
+                images_to_use = camera_images if camera_images else st.session_state.camera_capture
+
+                if st.button("Use Captured Images →", type="primary", use_container_width=True):
+                    with st.spinner("Processing captured images..."):
+                        time.sleep(2)
+
+                        # Créer des données simulées
+                        if camera_images:
+                            sample_data = pd.DataFrame({
+                                'image_name': [img.name for img in camera_images[:5]],
+                                'source': ['camera'] * min(5, len(camera_images)),
+                                'target': ['Class A', 'Class B', 'Class A', 'Class A', 'Class B']
+                            })
+                        else:
+                            sample_data = pd.DataFrame({
+                                'image_name': [f"capture_{i + 1}.jpg" for i in range(4)],
+                                'source': ['camera'] * 4,
+                                'target': ['Class A', 'Class B', 'Class A', 'Class B']
+                            })
+
+                        st.session_state.uploaded_data = images_to_use
+                        st.session_state.data_type = 'camera'
+                        st.session_state.data_preview = sample_data
+                        st.session_state.problem_type = 'classification'
+                        st.session_state.data_loaded = True
+                        st.session_state.step = 2
+                        st.rerun()
+
+        with tab4:
+            st.markdown("### Use Demo Dataset")
+            st.info("🎯 Quickly test the platform with sample data")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.markdown("""
+                    <div style='border: 2px solid #e2e8f0; border-radius: 1rem; padding: 2rem; text-align: center;'>
+                        <div style='font-size: 3rem;'>📊</div>
+                        <h3>Classification Demo</h3>
+                        <p>Sample data with categorical targets</p>
+                """, unsafe_allow_html=True)
+
+                if st.button("Use Classification Demo", key="demo_class", use_container_width=True):
+                    st.session_state.problem_type = 'classification'
+                    st.session_state.data_preview = demo_data['classification']
+                    st.session_state.columns = demo_data['classification'].columns.tolist()
+                    st.session_state.target_column = 'target'
+                    st.session_state.data_loaded = True
+                    st.session_state.uploaded_data = demo_data['classification']
+                    st.session_state.data_type = 'demo_tabular'
+                    st.session_state.step = 2
+                    st.rerun()
+
+                st.markdown("</div>", unsafe_allow_html=True)
+
+            with col2:
+                st.markdown("""
+                    <div style='border: 2px solid #e2e8f0; border-radius: 1rem; padding: 2rem; text-align: center;'>
+                        <div style='font-size: 3rem;'>📈</div>
+                        <h3>Regression Demo</h3>
+                        <p>Sample data with numerical targets</p>
+                """, unsafe_allow_html=True)
+
+                if st.button("Use Regression Demo", key="demo_reg", use_container_width=True):
+                    st.session_state.problem_type = 'regression'
+                    st.session_state.data_preview = demo_data['regression']
+                    st.session_state.columns = demo_data['regression'].columns.tolist()
+                    st.session_state.target_column = 'target'
+                    st.session_state.data_loaded = True
+                    st.session_state.uploaded_data = demo_data['regression']
+                    st.session_state.data_type = 'demo_tabular'
+                    st.session_state.step = 2
+                    st.rerun()
+
+                st.markdown("</div>", unsafe_allow_html=True)
+
+    # Étape 2: Sélection des algorithmes
+    elif st.session_state.step == 2 and st.session_state.problem_type:
+        st.markdown(f"## Algorithm Selection - {st.session_state.problem_type.title()}")
+
+        # Aperçu des données
+        st.markdown("### Dataset Overview")
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Data Type", st.session_state.data_type)
+        with col2:
+            if hasattr(st.session_state, 'uploaded_data'):
+                if st.session_state.data_type in ['tabular', 'demo_tabular']:
+                    st.metric("Rows", len(st.session_state.uploaded_data))
+                elif st.session_state.data_type in ['images', 'camera']:
+                    st.metric("Images", len(st.session_state.uploaded_data))
+        with col3:
+            st.metric("Problem Type", st.session_state.problem_type)
+
+        # Afficher l'aperçu selon le type de données
+        if st.session_state.data_type in ['tabular', 'demo_tabular']:
+            st.markdown("#### Data Preview")
+            st.dataframe(st.session_state.data_preview, use_container_width=True)
+        elif st.session_state.data_type in ['images', 'camera']:
+            st.markdown("#### Sample Images")
+            if st.session_state.data_type == 'images':
+                images_to_show = st.session_state.uploaded_data[:4]
+            else:
+                images_to_show = st.session_state.uploaded_data[:4] if st.session_state.camera_capture else []
+
+            if images_to_show:
+                cols = st.columns(4)
+                for idx, img in enumerate(images_to_show):
+                    with cols[idx]:
+                        if isinstance(img, Image.Image):
+                            st.image(img, use_column_width=True, caption=f"Image {idx + 1}")
+                        else:
+                            image = Image.open(img)
+                            st.image(image, use_column_width=True, caption=f"Image {idx + 1}")
+
+            st.markdown("#### Dataset Info")
+            st.dataframe(st.session_state.data_preview, use_container_width=True)
+
+        # Navigation
+        col1, col2 = st.columns([3, 1])
+        with col2:
+            if st.button("View Results →", type="primary", disabled=len(st.session_state.trained_models) == 0):
+                st.session_state.step = 3
+                st.rerun()
+
+            if st.button("← Change Dataset", use_container_width=True):
+                st.session_state.step = 1
+                st.rerun()
+
+        # Sélection des algorithmes
+        st.markdown("### Available Algorithms")
+
+        # Adapter les algorithmes selon le type de données
+        if st.session_state.data_type in ['images', 'camera']:
+            # Algorithmes spécialisés pour les images
+            image_algorithms = {
+                'classification': {
+                    'CNN Architectures': ['Simple CNN', 'Deep CNN', 'ResNet', 'VGG16', 'MobileNet'],
+                    'Transfer Learning': ['ResNet50 + Fine-tuning', 'VGG19 + Fine-tuning', 'EfficientNet'],
+                    'Traditional + Features': ['SVM + HOG', 'Random Forest + HOG', 'KNN + HOG']
+                }
+            }
+            algo_to_use = image_algorithms.get(st.session_state.problem_type, algorithms[st.session_state.problem_type])
+        else:
+            algo_to_use = algorithms[st.session_state.problem_type]
+
+        for category, models in algo_to_use.items():
+            st.markdown(f"#### {category}")
+
+            cols = st.columns(3)
+            for idx, model in enumerate(models):
+                col_idx = idx % 3
+                with cols[col_idx]:
+                    st.markdown(f"""
+                        <div class="model-card">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <strong>{model}</strong>
+                    """, unsafe_allow_html=True)
+
+                    if model in st.session_state.trained_models:
+                        if st.session_state.trained_models[model]['status'] == 'trained':
+                            st.markdown("✅", unsafe_allow_html=True)
+
+                    st.markdown("</div>", unsafe_allow_html=True)
+
+                    if model in st.session_state.trained_models:
+                        status = st.session_state.trained_models[model]['status']
+                        if status == 'training':
+                            if st.button("⏳ Training...", key=f"train_{model}", disabled=True,
+                                         use_container_width=True):
+                                pass
+                        else:
+                            if st.button("🔄 Retrain", key=f"retrain_{model}", use_container_width=True):
+                                train_model(model, st.session_state.problem_type, st.session_state.data_type)
+                    else:
+                        if st.button("🚀 Train Model", key=f"train_{model}", use_container_width=True):
+                            train_model(model, st.session_state.problem_type, st.session_state.data_type)
+
+                    st.markdown("</div>", unsafe_allow_html=True)
+
+    # Étape 3: Résultats (reste identique avec quelques adaptations)
+    elif st.session_state.step == 3:
+        st.markdown("## Training Results")
+
+        if st.button("← Back to Training"):
+            st.session_state.step = 2
+            st.rerun()
+
+        # Afficher le type de données utilisé
+        st.info(f"**Data Type:** {st.session_state.data_type} | **Problem Type:** {st.session_state.problem_type}")
+
+        # Comparaison des modèles
+        trained_models_list = [name for name, model in st.session_state.trained_models.items()
+                               if model['status'] == 'trained']
+
+        if trained_models_list:
+            st.markdown("### Model Performance Comparison")
+
+            # Préparation des données pour le graphique
+            comparison_data = []
+            for model_name in trained_models_list:
+                model_data = st.session_state.trained_models[model_name]
+                if st.session_state.problem_type == 'classification':
+                    score = float(model_data['metrics']['accuracy']) * 100
+                else:
+                    score = float(model_data['metrics']['r2Score']) * 100
+
+                comparison_data.append({
+                    'Model': model_name[:15] + '...' if len(model_name) > 15 else model_name,
+                    'Score': score,
+                    'Training Time': float(model_data['metrics']['trainTime'])
+                })
+
+            df_comparison = pd.DataFrame(comparison_data)
+
+            # Graphique de comparaison
+            fig = px.bar(df_comparison, x='Model', y='Score',
+                         title=f"{'Accuracy' if st.session_state.problem_type == 'classification' else 'R² Score'} Comparison",
+                         color='Score', color_continuous_scale='viridis')
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Métriques détaillées
+            st.markdown("### Detailed Model Metrics")
+
+            for model_name in trained_models_list:
+                model_data = st.session_state.trained_models[model_name]
+
+                with st.expander(f"📊 {model_name} - Training Time: {model_data['metrics']['trainTime']}s",
+                                 expanded=True):
+                    # Métriques
+                    metrics_cols = st.columns(4)
+                    metric_items = list(model_data['metrics'].items())
+
+                    for idx, (key, value) in enumerate(metric_items):
+                        if key != 'trainTime':
+                            col_idx = idx % 4
+                            with metrics_cols[col_idx]:
+                                st.markdown(f"""
+                                    <div class="metric-card">
+                                        <div style="font-size: 0.8rem; color: #64748b;">
+                                            {key.replace('_', ' ').title()}
+                                        </div>
+                                        <div style="font-size: 1.5rem; font-weight: bold; color: #6366f1;">
+                                            {value}
+                                        </div>
+                                    </div>
+                                """, unsafe_allow_html=True)
+
+                    # Graphiques supplémentaires pour la régression
+                    if st.session_state.problem_type == 'regression' and 'predictions' in model_data:
+                        st.markdown("#### Predictions vs Actual")
+
+                        predictions_df = pd.DataFrame(model_data['predictions'])
+                        fig_scatter = px.scatter(predictions_df, x='actual', y='predicted',
+                                                 title="Actual vs Predicted Values")
+                        fig_scatter.add_trace(go.Scatter(x=predictions_df['actual'],
+                                                         y=predictions_df['actual'],
+                                                         mode='lines', name='Perfect Prediction',
+                                                         line=dict(dash='dash', color='green')))
+                        st.plotly_chart(fig_scatter, use_container_width=True)
+
+            # Matrice de confusion pour la classification
+            if st.session_state.problem_type == 'classification':
+                st.markdown("### Confusion Matrix (Sample)")
+
+                confusion_data = {
+                    'True Class': ['A', 'B', 'C'],
+                    'Predicted A': [45, 2, 1],
+                    'Predicted B': [3, 48, 4],
+                    'Predicted C': [2, 5, 50]
+                }
+
+                confusion_df = pd.DataFrame(confusion_data)
+                st.dataframe(confusion_df, use_container_width=True)
+
+                # Heatmap de la matrice de confusion
+                fig_heatmap = go.Figure(data=go.Heatmap(
+                    z=[[45, 3, 2], [2, 48, 5], [1, 4, 50]],
+                    x=['Predicted A', 'Predicted B', 'Predicted C'],
+                    y=['True A', 'True B', 'True C'],
+                    colorscale='Blues',
+                    showscale=True
+                ))
+                fig_heatmap.update_layout(title="Confusion Matrix Heatmap")
+                st.plotly_chart(fig_heatmap, use_container_width=True)
+
+
+def train_model(model_name, problem_type, data_type):
+    """Simule l'entraînement d'un modèle"""
+    # Marquer le modèle comme en cours d'entraînement
+    st.session_state.trained_models[model_name] = {'status': 'training'}
+
+    # Simulation de l'entraînement avec une barre de progression
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+
+    # Message différent selon le type de données
+    if data_type in ['images', 'camera']:
+        status_message = f"Training {model_name} on images..."
+    else:
+        status_message = f"Training {model_name}..."
+
+    for i in range(100):
+        progress_bar.progress(i + 1)
+        status_text.text(f"{status_message} {i + 1}%")
+        time.sleep(0.02)
+
+    status_text.text("")
+    progress_bar.empty()
+
+    # Génération de métriques simulées
+    if problem_type == 'classification':
+        metrics = {
+            'accuracy': f"{0.85 + np.random.random() * 0.15:.3f}",
+            'precision': f"{0.80 + np.random.random() * 0.15:.3f}",
+            'recall': f"{0.82 + np.random.random() * 0.15:.3f}",
+            'f1_score': f"{0.83 + np.random.random() * 0.15:.3f}",
+            'trainTime': f"{np.random.random() * 2:.2f}"
+        }
+    else:
+        metrics = {
+            'mse': f"{0.1 + np.random.random() * 0.5:.3f}",
+            'rmse': f"{0.3 + np.random.random() * 0.3:.3f}",
+            'mae': f"{0.2 + np.random.random() * 0.3:.3f}",
+            'r2Score': f"{0.85 + np.random.random() * 0.15:.3f}",
+            'trainTime': f"{np.random.random() * 2:.2f}"
+        }
+
+    # Génération de prédictions simulées
+    predictions = []
+    for i in range(20):
+        base_value = 10 + i * 2
+        actual = base_value + (np.random.random() - 0.5) * 2
+        predicted = base_value + (np.random.random() - 0.5) * 3
+        predictions.append({
+            'actual': actual,
+            'predicted': predicted,
+            'index': i
+        })
+
+    st.session_state.trained_models[model_name] = {
+        'status': 'trained',
+        'metrics': metrics,
+        'predictions': predictions
+    }
+
+    st.rerun()
 
 
 if __name__ == "__main__":
-    # Test du module
-    print("Module ClassicalMLTrainer chargé avec succès!")
-    print(f"\nModèles de Classification disponibles: {len(ClassicalMLTrainer('classification').get_available_models())}")
-    print(f"Modèles de Régression disponibles: {len(ClassicalMLTra
+    main()
