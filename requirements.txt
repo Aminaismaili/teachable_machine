@@ -1,22 +1,18 @@
-# Teachable Machine - Requirements
-
 # Core
-streamlit
-pandas
-numpy
+streamlit>=1.31.0
+pandas>=2.0.0
+numpy>=1.24.0
 
-# Visualization
-matplotlib
-
-# Machine Learning
-scikit-learn
+# ML Libraries
+scikit-learn>=1.3.0
+xgboost>=2.0.0
 
 # Deep Learning
-tensorflow
+tensorflow-cpu>=2.15.0
+
+# Visualization
+plotly>=5.18.0
 
 # Data handling
-openpyxl
-xlrd
-
-# Optional (recommended)
-seaborn
+openpyxl>=3.1.0
+Pillow>=10.0.0
