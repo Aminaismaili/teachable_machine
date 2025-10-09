@@ -7,10 +7,16 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 from io import BytesIO
 import pickle
 import json
+
+# Essayer d'importer seaborn, sinon utiliser matplotlib
+try:
+    import seaborn as sns
+    HAS_SEABORN = True
+except ImportError:
+    HAS_SEABORN = False
 
 # Scikit-learn
 from sklearn.model_selection import train_test_split
