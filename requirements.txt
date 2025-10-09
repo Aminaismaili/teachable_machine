@@ -1,15 +1,23 @@
-# Core app
-streamlit==1.38.0
-pandas
-numpy
-matplotlib
-Pillow
-joblib
+# Teachable Machine - Requirements
 
-# ML / DL
-scikit-learn
-tensorflow-cpu
+# Core
+streamlit>=1.28.0
+pandas>=2.0.0
+numpy>=1.24.0
 
-# Reporting
-jinja2
-reportlab
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Machine Learning
+scikit-learn>=1.3.0
+
+# Deep Learning
+tensorflow>=2.13.0
+
+# Data handling
+openpyxl>=3.1.0  # Pour Excel
+xlrd>=2.0.1      # Pour Excel ancien format
+
+# Utilities
+Pillow>=10.0.0   # Pour traiter les images si besoin
