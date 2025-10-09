@@ -141,6 +141,20 @@ class DataProcessor:
             elif file_path.name.endswith('.json'):
                 df = pd.read_json(file_path)
             else:
+            fig, ax = plt.subplots(figsize=(10, 4))
+            ax.hist(df[target_col].dropna(), bins=30, color='#667eea', edgecolor='black')
+            ax.set_title(f'Distribution de {target_col}')
+            st.pyplot(fig)
+        
+        st.markdown("---")
+        
+        # Options avancées
+        with st.expander("🔧 Options avancées"):
+            scale_method = st.selectbox("Normalisation:", ["standard", "minmax"])
+            st.session_state.scale_method = scale_method
+            
+            random_state = st.number_input("Random State:", 0, 999, 42)
+            st.session_state.random_state = random_state
                 return None, "Format non supporté"
             
             return df, None
