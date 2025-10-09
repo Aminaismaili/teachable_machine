@@ -189,10 +189,18 @@ class DataProcessor:
         
         return X.values, y.values
     
-    def split_data(self, X, y, test_size=0.2, random_state=42):
+    def split_data(self, X, y, test_size=0.2, random_state=42, is_classification=True):
         """Split train/test"""
+        # Stratify seulement pour classification avec assez d'échantillons par classe
+        stratify_param = None
+        if is_classification:
+            unique, counts = np.unique(y, return_counts=True)
+            # Stratify seulement si chaque classe a au moins 2 échantillons
+            if len(unique) > 1 and counts.min() >= 2:
+                stratify_param = y
+        
         return train_test_split(X, y, test_size=test_size, random_state=random_state,
-                               stratify=y if len(np.unique(y)) > 1 else None)
+                               stratify=stratify_param)
     
     def scale_features(self, X_train, X_test):
         """Normalisation"""
@@ -761,7 +769,8 @@ elif st.session_state.step == 2:
                             st.session_state.df, target_column, st.session_state.problem_type
                         )
                         X_train, X_test, y_train, y_test = st.session_state.data_processor.split_data(
-                            X, y, st.session_state.test_size
+                            X, y, st.session_state.test_size, 
+                            is_classification=(st.session_state.problem_type == 'classification')
                         )
                         X_train_scaled, X_test_scaled = st.session_state.data_processor.scale_features(
                             X_train, X_test
