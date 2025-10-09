@@ -18,6 +18,12 @@ try:
 except ImportError:
     HAS_SEABORN = False
 
+# Import pour images
+from PIL import Image
+import os
+import zipfile
+import tempfile
+
 # Scikit-learn
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler
@@ -463,6 +469,77 @@ class NeuralNetworkTrainer:
         self.model = None
         self.history = None
         self.config = {}
+    
+    def build_cnn(self, input_shape, output_dim, conv_layers=3, filters=32, 
+                  kernel_size=3, dense_layers=2, dense_neurons=128,
+                  dropout=0.3, optimizer='adam', learning_rate=0.001):
+        """Construit un CNN pour images"""
+        model = models.Sequential()
+        
+        # Couches convolutives
+        current_filters = filters
+        for i in range(conv_layers):
+            if i == 0:
+                model.add(layers.Conv2D(current_filters, kernel_size, 
+                                       activation='relu', padding='same',
+                                       input_shape=input_shape))
+            else:
+                model.add(layers.Conv2D(current_filters, kernel_size, 
+                                       activation='relu', padding='same'))
+            
+            model.add(layers.BatchNormalization())
+            model.add(layers.MaxPooling2D(2))
+            model.add(layers.Dropout(dropout))
+            
+            current_filters *= 2
+        
+        # Aplatissement
+        model.add(layers.Flatten())
+        
+        # Couches denses
+        current_neurons = dense_neurons
+        for i in range(dense_layers):
+            model.add(layers.Dense(current_neurons, activation='relu'))
+            model.add(layers.BatchNormalization())
+            model.add(layers.Dropout(dropout))
+            current_neurons = max(16, current_neurons // 2)
+        
+        # Couche de sortie
+        if output_dim == 2:
+            model.add(layers.Dense(1, activation='sigmoid'))
+            loss = 'binary_crossentropy'
+            metrics = ['accuracy']
+        else:
+            model.add(layers.Dense(output_dim, activation='softmax'))
+            loss = 'sparse_categorical_crossentropy'
+            metrics = ['accuracy']
+        
+        # Compilation
+        if optimizer == 'adam':
+            opt = Adam(learning_rate=learning_rate)
+        elif optimizer == 'sgd':
+            opt = SGD(learning_rate=learning_rate, momentum=0.9)
+        else:
+            opt = RMSprop(learning_rate=learning_rate)
+        
+        model.compile(optimizer=opt, loss=loss, metrics=metrics)
+        
+        self.config = {
+            'input_shape': input_shape,
+            'output_dim': output_dim,
+            'conv_layers': conv_layers,
+            'filters': filters,
+            'kernel_size': kernel_size,
+            'dense_layers': dense_layers,
+            'dense_neurons': dense_neurons,
+            'dropout': dropout,
+            'optimizer': optimizer,
+            'learning_rate': learning_rate,
+            'type': 'cnn'
+        }
+        
+        self.model = model
+        return model
         
     def build_simple_nn(self, input_dim, output_dim, n_layers=3, neurons=128, 
                        dropout=0.3, activation='relu', optimizer='adam', learning_rate=0.001):
@@ -515,7 +592,8 @@ class NeuralNetworkTrainer:
             'dropout': dropout,
             'activation': activation,
             'optimizer': optimizer,
-            'learning_rate': learning_rate
+            'learning_rate': learning_rate,
+            'type': 'simple_nn'
         }
         
         self.model = model
@@ -630,12 +708,69 @@ def initialize_session_state():
         'configured': False,
         'trained': False,
         'df': None,
-        'processor': None
+        'processor': None,
+        'data_type': 'tabular',  # 'tabular' ou 'images'
+        'images_data': None,
+        'image_labels': None
     }
     
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
+
+
+def load_images_from_folders(uploaded_files):
+    """Charge des images depuis des fichiers uploadés organisés par classe"""
+    images = []
+    labels = []
+    label_names = []
+    
+    # Grouper par dossiers (basé sur le nom du fichier)
+    file_dict = {}
+    for file in uploaded_files:
+        # Extraire le label du nom de fichier (format: classe_xxx.jpg)
+        parts = file.name.split('_')
+        if len(parts) >= 2:
+            label = parts[0]
+        else:
+            label = 'class_0'
+        
+        if label not in file_dict:
+            file_dict[label] = []
+        file_dict[label].append(file)
+    
+    # Créer mapping label -> index
+    label_names = sorted(file_dict.keys())
+    label_to_idx = {label: idx for idx, label in enumerate(label_names)}
+    
+    # Charger les images
+    for label, files in file_dict.items():
+        for file in files:
+            try:
+                img = Image.open(file)
+                img = img.convert('RGB')
+                images.append(np.array(img))
+                labels.append(label_to_idx[label])
+            except Exception as e:
+                st.warning(f"Erreur chargement {file.name}: {str(e)}")
+    
+    return np.array(images), np.array(labels), label_names
+
+
+def preprocess_images(images, target_size=(64, 64)):
+    """Prétraite les images"""
+    processed = []
+    for img in images:
+        # Redimensionner
+        img_pil = Image.fromarray(img.astype('uint8'))
+        img_resized = img_pil.resize(target_size)
+        img_array = np.array(img_resized)
+        
+        # Normaliser
+        img_normalized = img_array.astype('float32') / 255.0
+        processed.append(img_normalized)
+    
+    return np.array(processed)
 
 
 def render_header():
@@ -687,57 +822,143 @@ def step1_upload_data():
     """Étape 1: Upload"""
     st.header("📁 Étape 1: Upload vos données")
     
-    uploaded_file = st.file_uploader(
-        "Choisissez un fichier",
-        type=['csv', 'xlsx', 'xls', 'json'],
-        help="CSV, Excel ou JSON"
+    # Choix du type de données
+    data_type = st.radio(
+        "Type de données:",
+        ["📊 Données tabulaires (CSV/Excel)", "🖼️ Images (Classification)"],
+        horizontal=True
     )
     
-    if uploaded_file:
-        processor = DataProcessor()
-        df, error = processor.load_data(file_path=uploaded_file)
+    st.session_state.data_type = 'images' if 'Images' in data_type else 'tabular'
+    
+    st.markdown("---")
+    
+    # DONNÉES TABULAIRES
+    if st.session_state.data_type == 'tabular':
+        uploaded_file = st.file_uploader(
+            "Choisissez un fichier",
+            type=['csv', 'xlsx', 'xls', 'json'],
+            help="CSV, Excel ou JSON"
+        )
         
-        if error:
-            st.error(f"❌ {error}")
-            return
+        if uploaded_file:
+            processor = DataProcessor()
+            df, error = processor.load_data(file_path=uploaded_file)
+            
+            if error:
+                st.error(f"❌ {error}")
+                return
+            
+            st.session_state.df = df
+            st.session_state.processor = processor
+            st.session_state.data_loaded = True
+            
+            st.success("✅ Données chargées!")
+            
+            # Métriques
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("📊 Lignes", df.shape[0])
+            with col2:
+                st.metric("📋 Colonnes", df.shape[1])
+            with col3:
+                st.metric("🔢 Numériques", len(df.select_dtypes(include=[np.number]).columns))
+            with col4:
+                st.metric("📝 Catégorielles", len(df.select_dtypes(include=['object']).columns))
+            
+            # Aperçu
+            st.subheader("👀 Aperçu")
+            st.dataframe(df.head(10), use_container_width=True)
+            
+            # Stats
+            with st.expander("📊 Statistiques"):
+                if len(df.select_dtypes(include=[np.number]).columns) > 0:
+                    st.dataframe(df.describe(), use_container_width=True)
+            
+            # Valeurs manquantes
+            missing = df.isnull().sum()
+            if missing.sum() > 0:
+                with st.expander("❓ Valeurs manquantes"):
+                    missing_df = pd.DataFrame({
+                        'Colonne': missing.index,
+                        'Manquantes': missing.values,
+                        'Pourcentage': (missing.values / len(df) * 100).round(2)
+                    })
+                    st.dataframe(missing_df[missing_df['Manquantes'] > 0], use_container_width=True)
+    
+    # IMAGES
+    else:
+        st.info("""
+        📝 **Instructions pour les images:**
+        1. Nommez vos fichiers avec le format: `classe_xxx.jpg` 
+        2. Exemple: `chat_001.jpg`, `chat_002.jpg`, `chien_001.jpg`, `chien_002.jpg`
+        3. Uploadez toutes les images en une fois
+        """)
         
-        st.session_state.df = df
-        st.session_state.processor = processor
-        st.session_state.data_loaded = True
+        uploaded_images = st.file_uploader(
+            "Choisissez vos images",
+            type=['jpg', 'jpeg', 'png'],
+            accept_multiple_files=True,
+            help="Formats supportés: JPG, PNG"
+        )
         
-        st.success("✅ Données chargées!")
-        
-        # Métriques
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("📊 Lignes", df.shape[0])
-        with col2:
-            st.metric("📋 Colonnes", df.shape[1])
-        with col3:
-            st.metric("🔢 Numériques", len(df.select_dtypes(include=[np.number]).columns))
-        with col4:
-            st.metric("📝 Catégorielles", len(df.select_dtypes(include=['object']).columns))
-        
-        # Aperçu
-        st.subheader("👀 Aperçu")
-        st.dataframe(df.head(10), use_container_width=True)
-        
-        # Stats
-        with st.expander("📊 Statistiques"):
-            if len(df.select_dtypes(include=[np.number]).columns) > 0:
-                st.dataframe(df.describe(), use_container_width=True)
-        
-        # Valeurs manquantes
-        missing = df.isnull().sum()
-        if missing.sum() > 0:
-            with st.expander("❓ Valeurs manquantes"):
-                missing_df = pd.DataFrame({
-                    'Colonne': missing.index,
-                    'Manquantes': missing.values,
-                    'Pourcentage': (missing.values / len(df) * 100).round(2)
-                })
-                st.dataframe(missing_df[missing_df['Manquantes'] > 0], use_container_width=True)
-        
+        if uploaded_images and len(uploaded_images) > 0:
+            with st.spinner("🔄 Chargement des images..."):
+                images, labels, label_names = load_images_from_folders(uploaded_images)
+                
+                if len(images) == 0:
+                    st.error("❌ Aucune image chargée")
+                    return
+                
+                st.session_state.images_data = images
+                st.session_state.image_labels = labels
+                st.session_state.label_names = label_names
+                st.session_state.data_loaded = True
+                st.session_state.problem_type = 'classification'  # Images = toujours classification
+                
+                st.success("✅ Images chargées!")
+            
+            # Statistiques
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("🖼️ Images", len(images))
+            with col2:
+                st.metric("🏷️ Classes", len(label_names))
+            with col3:
+                st.metric("📐 Taille", f"{images[0].shape[0]}x{images[0].shape[1]}")
+            with col4:
+                st.metric("🎨 Canaux", images[0].shape[2])
+            
+            # Distribution des classes
+            st.subheader("📊 Distribution des classes")
+            class_counts = pd.Series(labels).value_counts().sort_index()
+            class_names_display = [label_names[i] for i in class_counts.index]
+            
+            fig, ax = plt.subplots(figsize=(10, 4))
+            ax.bar(class_names_display, class_counts.values, color='#667eea')
+            ax.set_xlabel('Classes')
+            ax.set_ylabel('Nombre d\'images')
+            ax.set_title('Distribution des classes')
+            plt.xticks(rotation=45)
+            st.pyplot(fig)
+            
+            # Aperçu des images
+            st.subheader("👀 Aperçu des images")
+            n_display = min(12, len(images))
+            cols = st.columns(6)
+            
+            for idx in range(n_display):
+                with cols[idx % 6]:
+                    st.image(images[idx], caption=label_names[labels[idx]], use_column_width=True)
+            
+            # Infos par classe
+            with st.expander("📋 Détails par classe"):
+                for idx, name in enumerate(label_names):
+                    count = np.sum(labels == idx)
+                    st.write(f"**{name}**: {count} images")
+    
+    # Bouton suivant
+    if st.session_state.data_loaded:
         st.markdown("---")
         if st.button("➡️ Configuration", type="primary"):
             st.session_state.step = 2
@@ -752,49 +973,131 @@ def step2_configuration():
     
     st.header("⚙️ Étape 2: Configuration")
     
-    df = st.session_state.df
+    # Si images, skip certaines options
+    if st.session_state.data_type == 'images':
+        st.info("🖼️ **Mode Images**: Classification automatique avec CNN")
+        st.session_state.problem_type = 'classification'
+        st.session_state.model_type = 'Deep Learning'
+        
+        # Afficher infos
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("🏷️ Classes", len(st.session_state.label_names))
+            st.write("**Classes détectées:**")
+            for name in st.session_state.label_names:
+                st.write(f"- {name}")
+        
+        with col2:
+            st.metric("🖼️ Total images", len(st.session_state.images_data))
+            st.metric("📐 Taille", f"{st.session_state.images_data[0].shape[0]}x{st.session_state.images_data[0].shape[1]}")
+        
+        st.markdown("---")
+        
+        # Options de preprocessing
+        st.subheader("🔧 Options de preprocessing")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            target_size = st.selectbox(
+                "Taille cible (hauteur x largeur):",
+                ["32x32", "64x64", "128x128", "224x224"],
+                index=1
+            )
+            size = int(target_size.split('x')[0])
+            st.session_state.target_size = (size, size)
+        
+        with col2:
+            augmentation = st.checkbox("Data Augmentation", value=True, help="Rotation, flip pour augmenter les données")
+            st.session_state.augmentation = augmentation
+        
+    # Données tabulaires
+    else:
+        df = st.session_state.df
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("🎯 Type de problème")
+            problem_type = st.radio(
+                "Type:",
+                ["Classification", "Régression"],
+                horizontal=True
+            )
+            st.session_state.problem_type = problem_type.lower()
+        
+        with col2:
+            st.subheader("🧠 Type de modèle")
+            model_type = st.radio(
+                "Type:",
+                ["ML Classique", "Deep Learning"],
+                horizontal=True
+            )
+            st.session_state.model_type = model_type
+        
+        st.markdown("---")
+        
+        # Variable cible
+        st.subheader("🎯 Variable cible")
+        target_col = st.selectbox("Sélectionnez la colonne cible:", df.columns)
+        st.session_state.target_col = target_col
+        
+        col1, col2 = st.columns([3, 1])
+        with col2:
+            st.metric("Valeurs uniques", df[target_col].nunique())
+        
+        # Distribution
+        st.write("**Distribution:**")
+        if df[target_col].nunique() < 20:
+            fig, ax = plt.subplots(figsize=(10, 4))
+            df[target_col].value_counts().plot(kind='bar', ax=ax, color='#667eea')
+            ax.set_title(f'Distribution de {target_col}')
+            plt.xticks(rotation=45)
+            st.pyplot(fig)
+        else:
+            fig, ax = plt.subplots(figsize=(10, 4))
+            ax.hist(df[target_col].dropna(), bins=30, color='#667eea', edgecolor='black')
+            ax.set_title(f'Distribution de {target_col}')
+            st.pyplot(fig)
+        
+        st.markdown("---")
+        
+        # Options avancées
+        with st.expander("🔧 Options avancées"):
+            scale_method = st.selectbox("Normalisation:", ["standard", "minmax"])
+            st.session_state.scale_method = scale_method
+            
+            random_state = st.number_input("Random State:", 0, 999, 42)
+            st.session_state.random_state = random_state
     
+    # Split des données (commun)
+    st.markdown("---")
+    st.subheader("✂️ Split Train/Test")
+    col1, col2, col3 = st.columns([3, 1, 1])
+    
+    with col1:
+        test_size = st.slider("Test set (%)", 10, 40, 20, 5)
+        st.session_state.test_size = test_size / 100
+    
+    with col2:
+        st.metric("🎓 Train", f"{100-test_size}%")
+    
+    with col3:
+        st.metric("🧪 Test", f"{test_size}%")
+    
+    # Navigation
+    st.markdown("---")
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("🎯 Type de problème")
-        problem_type = st.radio(
-            "Type:",
-            ["Classification", "Régression"],
-            horizontal=True
-        )
-        st.session_state.problem_type = problem_type.lower()
+        if st.button("⬅️ Retour", use_container_width=True):
+            st.session_state.step = 1
+            st.rerun()
     
     with col2:
-        st.subheader("🧠 Type de modèle")
-        model_type = st.radio(
-            "Type:",
-            ["ML Classique", "Deep Learning"],
-            horizontal=True
-        )
-        st.session_state.model_type = model_type
-    
-    st.markdown("---")
-    
-    # Variable cible
-    st.subheader("🎯 Variable cible")
-    target_col = st.selectbox("Sélectionnez la colonne cible:", df.columns)
-    st.session_state.target_col = target_col
-    
-    col1, col2 = st.columns([3, 1])
-    with col2:
-        st.metric("Valeurs uniques", df[target_col].nunique())
-    
-    # Distribution
-    st.write("**Distribution:**")
-    if df[target_col].nunique() < 20:
-        fig, ax = plt.subplots(figsize=(10, 4))
-        df[target_col].value_counts().plot(kind='bar', ax=ax, color='#667eea')
-        ax.set_title(f'Distribution de {target_col}')
-        plt.xticks(rotation=45)
-        st.pyplot(fig)
-    else:
-        fig, ax = plt.subplots(figsize=(10, 4))
+        if st.button("✅ Valider", type="primary", use_container_width=True):
+            st.session_state.configured = True
+            st.session_state.step = 3
+            st.rerun()fig, ax = plt.subplots(figsize=(10, 4))
         ax.hist(df[target_col].dropna(), bins=30, color='#667eea', edgecolor='black')
         ax.set_title(f'Distribution de {target_col}')
         st.pyplot(fig)
@@ -847,179 +1150,129 @@ def step3_training():
     
     st.header("🚀 Étape 3: Entraînement")
     
-    # Préparation des données
-    if 'X_train' not in st.session_state:
-        with st.spinner("🔄 Préparation..."):
-            try:
-                processor = st.session_state.processor
-                X_train, X_test, y_train, y_test, feature_names, target_info = processor.prepare_data(
-                    st.session_state.df,
-                    st.session_state.target_col,
-                    test_size=st.session_state.test_size,
-                    random_state=st.session_state.get('random_state', 42),
-                    scale_method=st.session_state.get('scale_method', 'standard')
-                )
-                
-                st.session_state.X_train = X_train
-                st.session_state.X_test = X_test
-                st.session_state.y_train = y_train
-                st.session_state.y_test = y_test
-                st.session_state.feature_names = feature_names
-                st.session_state.target_info = target_info
-                
-                st.success("✅ Données prêtes!")
-                
-            except Exception as e:
-                st.error(f"❌ Erreur: {str(e)}")
-                return
-    
-    # Afficher infos
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("🎓 Train", st.session_state.X_train.shape[0])
-    with col2:
-        st.metric("🧪 Test", st.session_state.X_test.shape[0])
-    with col3:
-        st.metric("📊 Features", st.session_state.X_train.shape[1])
-    with col4:
-        if st.session_state.target_info['is_categorical']:
-            st.metric("🎯 Classes", st.session_state.target_info['n_classes'])
-        else:
-            st.metric("🎯 Type", "Numérique")
-    
-    st.markdown("---")
-    
-    # ML CLASSIQUE
-    if st.session_state.model_type == "ML Classique":
-        st.subheader("🤖 Machine Learning Classique")
+    # ENTRAÎNEMENT POUR IMAGES (CNN)
+    if st.session_state.data_type == 'images':
+        st.subheader("🖼️ Entraînement CNN pour Images")
         
-        trainer = ClassicalMLTrainer(st.session_state.problem_type)
-        available_models = list(trainer.get_available_models().keys())
-        
-        col1, col2 = st.columns([3, 1])
-        
-        with col1:
-            selected_models = st.multiselect(
-                "Algorithmes:",
-                available_models,
-                default=available_models[:3]
-            )
-        
-        with col2:
-            if st.checkbox("Tout"):
-                selected_models = available_models
-        
-        if selected_models:
-            st.info(f"📊 {len(selected_models)} modèle(s)")
-            
-            if st.button("🚀 Entraîner", type="primary", use_container_width=True):
-                progress_bar = st.progress(0)
-                status = st.empty()
-                
-                for idx, model_name in enumerate(selected_models):
-                    status.text(f"⏳ {model_name}...")
-                    trainer.train_single_model(
-                        model_name,
-                        st.session_state.X_train,
-                        st.session_state.y_train,
-                        st.session_state.X_test,
-                        st.session_state.y_test
+        # Préparation des données images
+        if 'X_train_img' not in st.session_state:
+            with st.spinner("🔄 Prétraitement des images..."):
+                try:
+                    # Prétraiter les images
+                    target_size = st.session_state.get('target_size', (64, 64))
+                    images_processed = preprocess_images(st.session_state.images_data, target_size)
+                    labels = st.session_state.image_labels
+                    
+                    # Split
+                    from sklearn.model_selection import train_test_split
+                    X_train, X_test, y_train, y_test = train_test_split(
+                        images_processed, labels,
+                        test_size=st.session_state.test_size,
+                        random_state=42,
+                        stratify=labels
                     )
-                    progress_bar.progress((idx + 1) / len(selected_models))
-                
-                status.text("✅ Terminé!")
-                
-                st.session_state.ml_trainer = trainer
-                st.session_state.ml_results = trainer.results
-                st.session_state.trained = True
-                
-                st.success("🎉 Entraînement réussi!")
-                st.balloons()
-                
-                st.session_state.step = 4
-                st.rerun()
-        else:
-            st.warning("⚠️ Sélectionnez au moins un algorithme")
-    
-    # DEEP LEARNING
-    else:
-        st.subheader("🧠 Deep Learning")
+                    
+                    st.session_state.X_train_img = X_train
+                    st.session_state.X_test_img = X_test
+                    st.session_state.y_train = y_train
+                    st.session_state.y_test = y_test
+                    
+                    st.success("✅ Images prêtes!")
+                except Exception as e:
+                    st.error(f"❌ Erreur: {str(e)}")
+                    return
         
-        col1, col2 = st.columns(2)
-        
+        # Infos
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
-            config_type = st.radio("Config:", ["Par défaut", "Personnalisée"])
-        
-        if config_type == "Personnalisée":
-            st.markdown("---")
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                n_layers = st.number_input("Couches", 2, 10, 3)
-                neurons = st.number_input("Neurons", 32, 512, 128, 32)
-            
-            with col2:
-                dropout = st.slider("Dropout", 0.0, 0.5, 0.3, 0.05)
-                activation = st.selectbox("Activation", ["relu", "tanh", "sigmoid"])
-            
-            with col3:
-                optimizer = st.selectbox("Optimiseur", ["adam", "sgd", "rmsprop"])
-                learning_rate = st.select_slider("LR", [0.0001, 0.0005, 0.001, 0.005, 0.01], value=0.001)
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                epochs = st.slider("Epochs", 10, 200, 100, 10)
-            with col2:
-                batch_size = st.selectbox("Batch", [16, 32, 64, 128], 1)
-            with col3:
-                patience = st.number_input("Patience", 5, 20, 10)
-        else:
-            n_layers, neurons, dropout = 3, 128, 0.3
-            activation, optimizer, learning_rate = 'relu', 'adam', 0.001
-            epochs, batch_size, patience = 100, 32, 10
-            
-            st.info("Config par défaut: 3 couches, 128 neurons, dropout 0.3")
+            st.metric("🎓 Train", len(st.session_state.X_train_img))
+        with col2:
+            st.metric("🧪 Test", len(st.session_state.X_test_img))
+        with col3:
+            st.metric("📐 Shape", f"{st.session_state.X_train_img.shape[1]}x{st.session_state.X_train_img.shape[2]}")
+        with col4:
+            st.metric("🏷️ Classes", len(st.session_state.label_names))
         
         st.markdown("---")
         
-        if st.button("🚀 Entraîner DL", type="primary", use_container_width=True):
-            with st.spinner("🔄 Entraînement..."):
+        # Configuration CNN
+        st.subheader("🔧 Configuration CNN")
+        
+        config_type = st.radio("Configuration:", ["Par défaut", "Personnalisée"])
+        
+        if config_type == "Personnalisée":
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                conv_layers = st.number_input("Couches Conv", 2, 5, 3)
+                filters = st.number_input("Filtres initiaux", 16, 128, 32, 16)
+            
+            with col2:
+                dense_layers = st.number_input("Couches Dense", 1, 3, 2)
+                dense_neurons = st.number_input("Neurons Dense", 32, 256, 128, 32)
+            
+            with col3:
+                dropout = st.slider("Dropout", 0.0, 0.5, 0.3, 0.05)
+                learning_rate = st.select_slider("LR", [0.0001, 0.0005, 0.001, 0.005], value=0.001)
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                epochs = st.slider("Epochs", 10, 100, 50, 10)
+            with col2:
+                batch_size = st.selectbox("Batch", [16, 32, 64], 1)
+            with col3:
+                patience = st.number_input("Patience", 5, 20, 10)
+        else:
+            conv_layers, filters = 3, 32
+            dense_layers, dense_neurons = 2, 128
+            dropout, learning_rate = 0.3, 0.001
+            epochs, batch_size, patience = 50, 32, 10
+            
+            st.info("**Config par défaut**: 3 conv layers, 32 filtres, 2 dense layers")
+        
+        st.markdown("---")
+        
+        # Entraînement
+        if st.button("🚀 Entraîner CNN", type="primary", use_container_width=True):
+            with st.spinner("🔄 Entraînement en cours..."):
                 try:
-                    dl_trainer = NeuralNetworkTrainer(st.session_state.problem_type)
+                    dl_trainer = NeuralNetworkTrainer('classification')
                     
-                    input_dim = st.session_state.X_train.shape[1]
-                    output_dim = st.session_state.target_info['n_classes'] if st.session_state.problem_type == 'classification' else 1
+                    input_shape = st.session_state.X_train_img.shape[1:]
+                    output_dim = len(st.session_state.label_names)
                     
                     status = st.empty()
-                    status.text("🏗️ Construction...")
+                    status.text("🏗️ Construction du CNN...")
                     
-                    model = dl_trainer.build_simple_nn(
-                        input_dim=input_dim,
+                    model = dl_trainer.build_cnn(
+                        input_shape=input_shape,
                         output_dim=output_dim,
-                        n_layers=n_layers,
-                        neurons=neurons,
+                        conv_layers=conv_layers,
+                        filters=filters,
+                        dense_layers=dense_layers,
+                        dense_neurons=dense_neurons,
                         dropout=dropout,
-                        activation=activation,
-                        optimizer=optimizer,
                         learning_rate=learning_rate
                     )
+                    
+                    with st.expander("📋 Architecture CNN"):
+                        st.text(dl_trainer.get_model_summary())
                     
                     status.text("🏃 Entraînement...")
                     
                     progress_bar = st.progress(0)
                     epoch_text = st.empty()
                     
-                    # Callback pour progression
                     class ProgressCallback(tf.keras.callbacks.Callback):
                         def on_epoch_end(self, epoch, logs=None):
                             progress = (epoch + 1) / epochs
                             progress_bar.progress(progress)
-                            epoch_text.text(f"Epoch {epoch+1}/{epochs} - Loss: {logs['loss']:.4f}")
+                            epoch_text.text(f"Epoch {epoch+1}/{epochs} - Loss: {logs['loss']:.4f} - Acc: {logs.get('accuracy', 0):.4f}")
                     
                     history = dl_trainer.train(
-                        st.session_state.X_train,
+                        st.session_state.X_train_img,
                         st.session_state.y_train,
-                        st.session_state.X_test,
+                        st.session_state.X_test_img,
                         st.session_state.y_test,
                         epochs=epochs,
                         batch_size=batch_size,
@@ -1034,7 +1287,7 @@ def step3_training():
                     st.session_state.dl_history = history
                     st.session_state.trained = True
                     
-                    st.success("🎉 Modèle entraîné!")
+                    st.success("🎉 CNN entraîné!")
                     st.balloons()
                     
                     st.session_state.step = 4
@@ -1042,6 +1295,205 @@ def step3_training():
                 
                 except Exception as e:
                     st.error(f"❌ Erreur: {str(e)}")
+                    import traceback
+                    st.code(traceback.format_exc())
+    
+    # ENTRAÎNEMENT POUR DONNÉES TABULAIRES
+    else:
+        # Préparation des données
+        if 'X_train' not in st.session_state:
+            with st.spinner("🔄 Préparation..."):
+                try:
+                    processor = st.session_state.processor
+                    X_train, X_test, y_train, y_test, feature_names, target_info = processor.prepare_data(
+                        st.session_state.df,
+                        st.session_state.target_col,
+                        test_size=st.session_state.test_size,
+                        random_state=st.session_state.get('random_state', 42),
+                        scale_method=st.session_state.get('scale_method', 'standard')
+                    )
+                    
+                    st.session_state.X_train = X_train
+                    st.session_state.X_test = X_test
+                    st.session_state.y_train = y_train
+                    st.session_state.y_test = y_test
+                    st.session_state.feature_names = feature_names
+                    st.session_state.target_info = target_info
+                    
+                    st.success("✅ Données prêtes!")
+                    
+                except Exception as e:
+                    st.error(f"❌ Erreur: {str(e)}")
+                    return
+        
+        # Afficher infos
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("🎓 Train", st.session_state.X_train.shape[0])
+        with col2:
+            st.metric("🧪 Test", st.session_state.X_test.shape[0])
+        with col3:
+            st.metric("📊 Features", st.session_state.X_train.shape[1])
+        with col4:
+            if st.session_state.target_info['is_categorical']:
+                st.metric("🎯 Classes", st.session_state.target_info['n_classes'])
+            else:
+                st.metric("🎯 Type", "Numérique")
+        
+        st.markdown("---")
+        
+        # ML CLASSIQUE
+        if st.session_state.model_type == "ML Classique":
+            st.subheader("🤖 Machine Learning Classique")
+            
+            trainer = ClassicalMLTrainer(st.session_state.problem_type)
+            available_models = list(trainer.get_available_models().keys())
+            
+            col1, col2 = st.columns([3, 1])
+            
+            with col1:
+                selected_models = st.multiselect(
+                    "Algorithmes:",
+                    available_models,
+                    default=available_models[:3]
+                )
+            
+            with col2:
+                if st.checkbox("Tout"):
+                    selected_models = available_models
+            
+            if selected_models:
+                st.info(f"📊 {len(selected_models)} modèle(s)")
+                
+                if st.button("🚀 Entraîner", type="primary", use_container_width=True):
+                    progress_bar = st.progress(0)
+                    status = st.empty()
+                    
+                    for idx, model_name in enumerate(selected_models):
+                        status.text(f"⏳ {model_name}...")
+                        trainer.train_single_model(
+                            model_name,
+                            st.session_state.X_train,
+                            st.session_state.y_train,
+                            st.session_state.X_test,
+                            st.session_state.y_test
+                        )
+                        progress_bar.progress((idx + 1) / len(selected_models))
+                    
+                    status.text("✅ Terminé!")
+                    
+                    st.session_state.ml_trainer = trainer
+                    st.session_state.ml_results = trainer.results
+                    st.session_state.trained = True
+                    
+                    st.success("🎉 Entraînement réussi!")
+                    st.balloons()
+                    
+                    st.session_state.step = 4
+                    st.rerun()
+            else:
+                st.warning("⚠️ Sélectionnez au moins un algorithme")
+        
+        # DEEP LEARNING
+        else:
+            st.subheader("🧠 Deep Learning")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                config_type = st.radio("Config:", ["Par défaut", "Personnalisée"])
+            
+            if config_type == "Personnalisée":
+                st.markdown("---")
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    n_layers = st.number_input("Couches", 2, 10, 3)
+                    neurons = st.number_input("Neurons", 32, 512, 128, 32)
+                
+                with col2:
+                    dropout = st.slider("Dropout", 0.0, 0.5, 0.3, 0.05)
+                    activation = st.selectbox("Activation", ["relu", "tanh", "sigmoid"])
+                
+                with col3:
+                    optimizer = st.selectbox("Optimiseur", ["adam", "sgd", "rmsprop"])
+                    learning_rate = st.select_slider("LR", [0.0001, 0.0005, 0.001, 0.005, 0.01], value=0.001)
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    epochs = st.slider("Epochs", 10, 200, 100, 10)
+                with col2:
+                    batch_size = st.selectbox("Batch", [16, 32, 64, 128], 1)
+                with col3:
+                    patience = st.number_input("Patience", 5, 20, 10)
+            else:
+                n_layers, neurons, dropout = 3, 128, 0.3
+                activation, optimizer, learning_rate = 'relu', 'adam', 0.001
+                epochs, batch_size, patience = 100, 32, 10
+                
+                st.info("Config par défaut: 3 couches, 128 neurons, dropout 0.3")
+            
+            st.markdown("---")
+            
+            if st.button("🚀 Entraîner DL", type="primary", use_container_width=True):
+                with st.spinner("🔄 Entraînement..."):
+                    try:
+                        dl_trainer = NeuralNetworkTrainer(st.session_state.problem_type)
+                        
+                        input_dim = st.session_state.X_train.shape[1]
+                        output_dim = st.session_state.target_info['n_classes'] if st.session_state.problem_type == 'classification' else 1
+                        
+                        status = st.empty()
+                        status.text("🏗️ Construction...")
+                        
+                        model = dl_trainer.build_simple_nn(
+                            input_dim=input_dim,
+                            output_dim=output_dim,
+                            n_layers=n_layers,
+                            neurons=neurons,
+                            dropout=dropout,
+                            activation=activation,
+                            optimizer=optimizer,
+                            learning_rate=learning_rate
+                        )
+                        
+                        status.text("🏃 Entraînement...")
+                        
+                        progress_bar = st.progress(0)
+                        epoch_text = st.empty()
+                        
+                        class ProgressCallback(tf.keras.callbacks.Callback):
+                            def on_epoch_end(self, epoch, logs=None):
+                                progress = (epoch + 1) / epochs
+                                progress_bar.progress(progress)
+                                epoch_text.text(f"Epoch {epoch+1}/{epochs} - Loss: {logs['loss']:.4f}")
+                        
+                        history = dl_trainer.train(
+                            st.session_state.X_train,
+                            st.session_state.y_train,
+                            st.session_state.X_test,
+                            st.session_state.y_test,
+                            epochs=epochs,
+                            batch_size=batch_size,
+                            patience=patience,
+                            verbose=0
+                        )
+                        
+                        progress_bar.progress(1.0)
+                        status.text("✅ Terminé!")
+                        
+                        st.session_state.dl_trainer = dl_trainer
+                        st.session_state.dl_history = history
+                        st.session_state.trained = True
+                        
+                        st.success("🎉 Modèle entraîné!")
+                        st.balloons()
+                        
+                        st.session_state.step = 4
+                        st.rerun()
+                    
+                    except Exception as e:
+                        st.error(f"❌ Erreur: {str(e)}")
     
     st.markdown("---")
     if st.button("⬅️ Retour"):
@@ -1112,7 +1564,15 @@ def step4_results():
                 cm = results[model_select]['metrics']['confusion_matrix']
                 
                 fig, ax = plt.subplots(figsize=(8, 6))
-                sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
+                if HAS_SEABORN:
+                    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
+                else:
+                    im = ax.imshow(cm, cmap='Blues', interpolation='nearest')
+                    ax.figure.colorbar(im, ax=ax)
+                    # Ajouter les annotations
+                    for i in range(cm.shape[0]):
+                        for j in range(cm.shape[1]):
+                            ax.text(j, i, str(cm[i, j]), ha="center", va="center", color="black")
                 ax.set_title(f'Matrice - {model_select}')
                 ax.set_xlabel('Prédictions')
                 ax.set_ylabel('Vraies valeurs')
@@ -1235,7 +1695,14 @@ def step4_results():
             st.subheader("🎯 Matrice de Confusion")
             cm = metrics['confusion_matrix']
             fig, ax = plt.subplots(figsize=(8, 6))
-            sns.heatmap(cm, annot=True, fmt='d', cmap='viridis', ax=ax)
+            if HAS_SEABORN:
+                sns.heatmap(cm, annot=True, fmt='d', cmap='viridis', ax=ax)
+            else:
+                im = ax.imshow(cm, cmap='viridis', interpolation='nearest')
+                ax.figure.colorbar(im, ax=ax)
+                for i in range(cm.shape[0]):
+                    for j in range(cm.shape[1]):
+                        ax.text(j, i, str(cm[i, j]), ha="center", va="center", color="white" if cm[i, j] > cm.max()/2 else "black")
             ax.set_title('Matrice de Confusion')
             st.pyplot(fig)
         
