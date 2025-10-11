@@ -17,3 +17,4 @@ matplotlib
 openpyxl
 Pillow
 opencv-python-headless
+
