@@ -131,6 +131,49 @@ def train_model(model_name, problem_type, data_type):
     progress_bar = st.progress(0)
     status_text = st.empty()
     
+    # Détection CNN
+    is_cnn = 'CNN' in model_name or (data_type in ['images', 'camera'] and 'NN' in model_name)
+    
+    # Si c'est un CNN, créer un résumé d'architecture simulé
+    if is_cnn:
+        # Calculer les paramètres de manière cohérente
+        conv1_params = 896  # (3*3*3+1)*32
+        conv2_params = 18496  # (3*3*32+1)*64
+        conv3_params = 73856  # (3*3*64+1)*128
+        dense1_params = 1048704  # 8192*128 + 128
+        dense2_params = 8256  # 128*64 + 64
+        dense3_params = 195  # 64*3 + 3
+        
+        total_params = conv1_params + conv2_params + conv3_params + dense1_params + dense2_params + dense3_params
+        
+        architecture_summary = {
+            'total_params': total_params,
+            'trainable_params': total_params,
+            'non_trainable_params': 0,
+            'layers': [
+                {'type': 'Conv2D', 'output_shape': '(None, 64, 64, 32)', 'params': conv1_params},
+                {'type': 'BatchNormalization', 'output_shape': '(None, 64, 64, 32)', 'params': 128},
+                {'type': 'MaxPooling2D', 'output_shape': '(None, 32, 32, 32)', 'params': 0},
+                {'type': 'Dropout', 'output_shape': '(None, 32, 32, 32)', 'params': 0},
+                {'type': 'Conv2D', 'output_shape': '(None, 32, 32, 64)', 'params': conv2_params},
+                {'type': 'BatchNormalization', 'output_shape': '(None, 32, 32, 64)', 'params': 256},
+                {'type': 'MaxPooling2D', 'output_shape': '(None, 16, 16, 64)', 'params': 0},
+                {'type': 'Dropout', 'output_shape': '(None, 16, 16, 64)', 'params': 0},
+                {'type': 'Conv2D', 'output_shape': '(None, 16, 16, 128)', 'params': conv3_params},
+                {'type': 'BatchNormalization', 'output_shape': '(None, 16, 16, 128)', 'params': 512},
+                {'type': 'MaxPooling2D', 'output_shape': '(None, 8, 8, 128)', 'params': 0},
+                {'type': 'Dropout', 'output_shape': '(None, 8, 8, 128)', 'params': 0},
+                {'type': 'Flatten', 'output_shape': '(None, 8192)', 'params': 0},
+                {'type': 'Dense', 'output_shape': '(None, 128)', 'params': dense1_params},
+                {'type': 'BatchNormalization', 'output_shape': '(None, 128)', 'params': 512},
+                {'type': 'Dropout', 'output_shape': '(None, 128)', 'params': 0},
+                {'type': 'Dense', 'output_shape': '(None, 64)', 'params': dense2_params},
+                {'type': 'BatchNormalization', 'output_shape': '(None, 64)', 'params': 256},
+                {'type': 'Dropout', 'output_shape': '(None, 64)', 'params': 0},
+                {'type': 'Dense (Output)', 'output_shape': '(None, 3)', 'params': dense3_params}
+            ]
+        }
+    
     for i in range(100):
         progress_bar.progress(i + 1)
         status_text.text(f"Entraînement {model_name}... {i + 1}%")
@@ -139,9 +182,6 @@ def train_model(model_name, problem_type, data_type):
     status_text.text("")
     progress_bar.empty()
     
-    # Détection CNN
-    is_cnn = 'CNN' in model_name or (data_type in ['images', 'camera'] and 'NN' in model_name)
-    
     if problem_type == 'classification':
         if is_cnn:
             metrics = {
@@ -149,6 +189,8 @@ def train_model(model_name, problem_type, data_type):
                 'val_accuracy': f"{0.83 + np.random.random() * 0.15:.3f}",
                 'loss': f"{0.2 + np.random.random() * 0.3:.3f}",
                 'val_loss': f"{0.25 + np.random.random() * 0.3:.3f}",
+                'precision': f"{0.80 + np.random.random() * 0.15:.3f}",
+                'recall': f"{0.82 + np.random.random() * 0.15:.3f}",
                 'trainTime': f"{np.random.random() * 5:.2f}"
             }
         else:
@@ -168,10 +210,16 @@ def train_model(model_name, problem_type, data_type):
             'trainTime': f"{np.random.random() * 2:.2f}"
         }
     
-    st.session_state.trained_models[model_name] = {
+    # Sauvegarder avec architecture si CNN
+    model_data = {
         'status': 'trained',
         'metrics': metrics
     }
+    
+    if is_cnn:
+        model_data['architecture'] = architecture_summary
+    
+    st.session_state.trained_models[model_name] = model_data
     
     st.rerun()
 
@@ -533,7 +581,7 @@ def main():
                 st.session_state.step = 4
                 st.rerun()
 
-    # Étape 4: Résultats (CORRIGÉ)
+    # Étape 4: Résultats (CORRIGÉ AVEC ARCHITECTURE CNN)
     elif st.session_state.step == 4:
         st.markdown("## 📊 Résultats")
         
@@ -554,7 +602,6 @@ def main():
                 
                 try:
                     if st.session_state.problem_type == 'classification':
-                        # Gestion flexible pour CNN et ML classique
                         if 'accuracy' in model_data['metrics']:
                             score = float(model_data['metrics']['accuracy']) * 100
                         elif 'val_accuracy' in model_data['metrics']:
@@ -566,8 +613,7 @@ def main():
                             score = float(model_data['metrics']['r2Score']) * 100
                         else:
                             score = 85.0
-                    
-                    comparison_data.append({
+                            comparison_data.append({
                         'Modèle': model_name,
                         'Score': score,
                         'Temps d\'entraînement': float(model_data['metrics'].get('trainTime', 0))
@@ -582,12 +628,23 @@ def main():
                 fig = px.bar(df_comparison, x='Modèle', y='Score',
                              title="Comparaison des Performances",
                              color='Score', color_continuous_scale='viridis')
+                fig.update_layout(
+                    plot_bgcolor='#0E1117',
+                    paper_bgcolor='#0E1117',
+                    font_color='#FAFAFA'
+                )
                 st.plotly_chart(fig, use_container_width=True)
                 
                 # Métriques détaillées
+                st.markdown("### Détails des Modèles")
+                
                 for model_name in trained_models_list:
                     model_data = st.session_state.trained_models[model_name]
+                    has_architecture = 'architecture' in model_data
+                    
                     with st.expander(f"📊 {model_name} - Temps: {model_data['metrics'].get('trainTime', 'N/A')}s"):
+                        # Métriques
+                        st.markdown("#### 📈 Métriques de Performance")
                         metrics_cols = st.columns(4)
                         metric_items = list(model_data['metrics'].items())
                         
@@ -607,6 +664,228 @@ def main():
                                         </div>
                                     """, unsafe_allow_html=True)
                                 col_counter += 1
+                        
+                        # Si CNN, afficher l'architecture
+                        if has_architecture:
+                            st.markdown("---")
+                            st.markdown("### 🏗️ Architecture du Modèle CNN")
+                            
+                            arch = model_data['architecture']
+                            
+                            # Résumé des paramètres avec style
+                            st.markdown("""
+                                <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                            padding: 1.5rem; border-radius: 1rem; margin: 1rem 0;'>
+                                    <h4 style='color: white; margin: 0 0 1rem 0;'>📊 Résumé des Paramètres</h4>
+                                </div>
+                            """, unsafe_allow_html=True)
+                            
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                st.markdown(f"""
+                                    <div class="metric-card" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);">
+                                        <div style="font-size: 0.9rem; color: #dbeafe;">Total Paramètres</div>
+                                        <div style="font-size: 2rem; font-weight: bold; color: white;">
+                                            {arch['total_params']:,}
+                                        </div>
+                                    </div>
+                                """, unsafe_allow_html=True)
+                            with col2:
+                                st.markdown(f"""
+                                    <div class="metric-card" style="background: linear-gradient(135deg, #065f46 0%, #10b981 100%);">
+                                        <div style="font-size: 0.9rem; color: #d1fae5;">Entraînables</div>
+                                        <div style="font-size: 2rem; font-weight: bold; color: white;">
+                                            {arch['trainable_params']:,}
+                                        </div>
+                                    </div>
+                                """, unsafe_allow_html=True)
+                            with col3:
+                                st.markdown(f"""
+                                    <div class="metric-card" style="background: linear-gradient(135deg, #7c2d12 0%, #f97316 100%);">
+                                        <div style="font-size: 0.9rem; color: #fed7aa;">Non-Entraînables</div>
+                                        <div style="font-size: 2rem; font-weight: bold; color: white;">
+                                            {arch['non_trainable_params']:,}
+                                        </div>
+                                    </div>
+                                """, unsafe_allow_html=True)
+                            
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            
+                            # Tableau des couches
+                            st.markdown("#### 🔍 Détail des Couches")
+                            layers_data = []
+                            for idx, layer in enumerate(arch['layers'], 1):
+                                layers_data.append({
+                                    'N°': idx,
+                                    'Type de Couche': layer['type'],
+                                    'Output Shape': layer['output_shape'],
+                                    'Paramètres': f"{layer['params']:,}"
+                                })
+                            
+                            df_layers = pd.DataFrame(layers_data)
+                            
+                            # Style du tableau
+                            st.dataframe(
+                                df_layers,
+                                use_container_width=True,
+                                hide_index=True,
+                                column_config={
+                                    "N°": st.column_config.NumberColumn(
+                                        "N°",
+                                        help="Numéro de la couche",
+                                        width="small"
+                                    ),
+                                    "Type de Couche": st.column_config.TextColumn(
+                                        "Type de Couche",
+                                        help="Type de la couche du réseau",
+                                        width="medium"
+                                    ),
+                                    "Output Shape": st.column_config.TextColumn(
+                                        "Output Shape",
+                                        help="Dimension de sortie",
+                                        width="medium"
+                                    ),
+                                    "Paramètres": st.column_config.TextColumn(
+                                        "Paramètres",
+                                        help="Nombre de paramètres",
+                                        width="small"
+                                    )
+                                }
+                            )
+                            
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            
+                            # Visualisation graphique de l'architecture
+                            st.markdown("#### 📊 Visualisation de l'Architecture")
+                            
+                            # Créer deux graphiques côte à côte
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                # Graphique horizontal des paramètres par couche
+                                layer_names = [f"{layer['type']}" for layer in arch['layers']]
+                                layer_params = [layer['params'] for layer in arch['layers']]
+                                
+                                # Filtrer les couches avec paramètres > 0
+                                non_zero_layers = [(name, params) for name, params in zip(layer_names, layer_params) if params > 0]
+                                if non_zero_layers:
+                                    names, params = zip(*non_zero_layers)
+                                    
+                                    fig1 = go.Figure(data=[
+                                        go.Bar(
+                                            y=list(names)[::-1],
+                                            x=list(params)[::-1],
+                                            orientation='h',
+                                            marker=dict(
+                                                color=list(params)[::-1],
+                                                colorscale='Viridis',
+                                                showscale=True,
+                                                colorbar=dict(title="Paramètres", x=1.15)
+                                            ),
+                                            text=[f"{p:,}" for p in params[::-1]],
+                                            textposition='auto',
+                                            hovertemplate='<b>%{y}</b><br>Paramètres: %{x:,}<extra></extra>'
+                                        )
+                                    ])
+                                    
+                                    fig1.update_layout(
+                                        title="Paramètres par Couche (avec params > 0)",
+                                        xaxis_title="Nombre de paramètres",
+                                        yaxis_title="Couches",
+                                        height=500,
+                                        plot_bgcolor='#0E1117',
+                                        paper_bgcolor='#0E1117',
+                                        font_color='#FAFAFA',
+                                        margin=dict(l=10, r=150, t=50, b=50)
+                                    )
+                                    
+                                    st.plotly_chart(fig1, use_container_width=True)
+                            
+                            with col2:
+                                # Diagramme circulaire de la distribution des paramètres
+                                layer_types = {}
+                                for layer in arch['layers']:
+                                    layer_type = layer['type'].split()[0]  # Prendre le premier mot
+                                    if layer['params'] > 0:
+                                        if layer_type in layer_types:
+                                            layer_types[layer_type] += layer['params']
+                                        else:
+                                            layer_types[layer_type] = layer['params']
+                                
+                                if layer_types:
+                                    fig2 = go.Figure(data=[go.Pie(
+                                        labels=list(layer_types.keys()),
+                                        values=list(layer_types.values()),
+                                        hole=0.4,
+                                        marker=dict(
+                                            colors=['#667eea', '#764ba2', '#f59e0b', '#10b981', '#ef4444']
+                                        ),
+                                        textinfo='label+percent',
+                                        hovertemplate='<b>%{label}</b><br>Paramètres: %{value:,}<br>Pourcentage: %{percent}<extra></extra>'
+                                    )])
+                                    
+                                    fig2.update_layout(
+                                        title="Distribution des Paramètres par Type",
+                                        height=500,
+                                        plot_bgcolor='#0E1117',
+                                        paper_bgcolor='#0E1117',
+                                        font_color='#FAFAFA',
+                                        showlegend=True,
+                                        legend=dict(
+                                            orientation="v",
+                                            yanchor="middle",
+                                            y=0.5,
+                                            xanchor="left",
+                                            x=1.05
+                                        )
+                                    )
+                                    
+                                    st.plotly_chart(fig2, use_container_width=True)
+                            
+                            # Schéma textuel de l'architecture
+                            st.markdown("#### 🗂️ Schéma de l'Architecture")
+                            
+                            schema_text = "```\n"
+                            schema_text += "INPUT\n"
+                            schema_text += "  ↓\n"
+                            
+                            for idx, layer in enumerate(arch['layers']):
+                                schema_text += f"[{layer['type']}] {layer['output_shape']}\n"
+                                if layer['params'] > 0:
+                                    schema_text += f"  → Params: {layer['params']:,}\n"
+                                if idx < len(arch['layers']) - 1:
+                                    schema_text += "  ↓\n"
+                            
+                            schema_text += "  ↓\n"
+                            schema_text += "OUTPUT\n"
+                            schema_text += "```"
+                            
+                            st.markdown(schema_text)
+                            
+                            # Informations supplémentaires
+                            st.markdown("#### ℹ️ Informations Supplémentaires")
+                            
+                            info_col1, info_col2, info_col3 = st.columns(3)
+                            
+                            with info_col1:
+                                total_layers = len(arch['layers'])
+                                st.info(f"**Nombre total de couches**: {total_layers}")
+                            
+                            with info_col2:
+                                conv_layers = sum(1 for layer in arch['layers'] if 'Conv' in layer['type'])
+                                st.info(f"**Couches convolutives**: {conv_layers}")
+                            
+                            with info_col3:
+                                dense_layers = sum(1 for layer in arch['layers'] if 'Dense' in layer['type'])
+                                st.info(f"**Couches denses**: {dense_layers}")
+                            
+                            # Taille estimée du modèle
+                            model_size_mb = (arch['total_params'] * 4) / (1024 * 1024)  # Approximation en MB
+                            st.success(f"**Taille estimée du modèle**: {model_size_mb:.2f} MB (en float32)")
+            
+            else:
+                st.error("Aucune donnée de comparaison disponible")
+        
         else:
             st.markdown("""
                 <div class="error-card">
