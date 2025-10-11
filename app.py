@@ -581,7 +581,7 @@ def main():
                 st.session_state.step = 4
                 st.rerun()
 
-    # Étape 4: Résultats (CORRIGÉ AVEC ARCHITECTURE CNN)
+   # Étape 4: Résultats (CORRECTION COMPLÈTE)
     elif st.session_state.step == 4:
         st.markdown("## 📊 Résultats")
         
@@ -590,7 +590,7 @@ def main():
             st.rerun()
         
         trained_models_list = [name for name, model in st.session_state.trained_models.items()
-                               if model['status'] == 'trained']
+                               if model.get('status') == 'trained']
         
         if trained_models_list:
             # Comparaison des modèles
@@ -598,71 +598,251 @@ def main():
             
             comparison_data = []
             for model_name in trained_models_list:
-                model_data = st.session_state.trained_models[model_name]
-                
                 try:
+                    model_data = st.session_state.trained_models[model_name]
+                    
+                    # Vérifier que metrics existe
+                    if 'metrics' not in model_data:
+                        continue
+                    
+                    metrics = model_data['metrics']
+                    
                     if st.session_state.problem_type == 'classification':
-                        if 'accuracy' in model_data['metrics']:
-                            score = float(model_data['metrics']['accuracy']) * 100
-                        elif 'val_accuracy' in model_data['metrics']:
-                            score = float(model_data['metrics']['val_accuracy']) * 100
+                        # Gestion flexible pour CNN et ML classique
+                        if 'accuracy' in metrics:
+                            score = float(metrics['accuracy']) * 100
+                        elif 'val_accuracy' in metrics:
+                            score = float(metrics['val_accuracy']) * 100
                         else:
                             score = 85.0
                     else:
-                        if 'r2Score' in model_data['metrics']:
-                            score = float(model_data['metrics']['r2Score']) * 100
+                        if 'r2Score' in metrics:
+                            score = float(metrics['r2Score']) * 100
                         else:
                             score = 85.0
-                            comparison_data.append({
+                    
+                    comparison_data.append({
                         'Modèle': model_name,
-                        'Score': score,
-                        'Temps d\'entraînement': float(model_data['metrics'].get('trainTime', 0))
+                        'Score': round(score, 2),
+                        'Temps d\'entraînement': float(metrics.get('trainTime', 0))
                     })
+                    
                 except Exception as e:
-                    st.warning(f"Erreur pour {model_name}: {str(e)}")
+                    st.warning(f"⚠️ Erreur pour {model_name}: {str(e)}")
                     continue
             
-            if comparison_data:
+            # Vérifier qu'on a des données
+            if len(comparison_data) == 0:
+                st.error("❌ Aucun modèle avec des métriques valides trouvé. Veuillez ré-entraîner les modèles.")
+            else:
                 df_comparison = pd.DataFrame(comparison_data)
                 
-                fig = px.bar(df_comparison, x='Modèle', y='Score',
-                             title="Comparaison des Performances",
-                             color='Score', color_continuous_scale='viridis')
+                # Graphique de comparaison
+                fig = px.bar(
+                    df_comparison, 
+                    x='Modèle', 
+                    y='Score',
+                    title="Comparaison des Performances",
+                    color='Score', 
+                    color_continuous_scale='Viridis',
+                    text='Score'
+                )
+                
+                fig.update_traces(texttemplate='%{text:.2f}%', textposition='outside')
+                
                 fig.update_layout(
                     plot_bgcolor='#0E1117',
                     paper_bgcolor='#0E1117',
-                    font_color='#FAFAFA'
+                    font_color='#FAFAFA',
+                    xaxis_title="Modèles",
+                    yaxis_title="Score (%)",
+                    height=500
                 )
+                
                 st.plotly_chart(fig, use_container_width=True)
                 
-                # Métriques détaillées
-                st.markdown("### Détails des Modèles")
+                # Afficher le tableau de comparaison
+                st.markdown("#### 📋 Tableau Récapitulatif")
+                st.dataframe(
+                    df_comparison.style.background_gradient(subset=['Score'], cmap='Greens'),
+                    use_container_width=True,
+                    hide_index=True
+                )
+                
+                # Métriques détaillées pour chaque modèle
+                st.markdown("### 📊 Détails des Modèles")
                 
                 for model_name in trained_models_list:
-                    model_data = st.session_state.trained_models[model_name]
-                    has_architecture = 'architecture' in model_data
-                    
-                    with st.expander(f"📊 {model_name} - Temps: {model_data['metrics'].get('trainTime', 'N/A')}s"):
-                        # Métriques
-                        st.markdown("#### 📈 Métriques de Performance")
-                        metrics_cols = st.columns(4)
-                        metric_items = list(model_data['metrics'].items())
+                    try:
+                        model_data = st.session_state.trained_models[model_name]
                         
-                        col_counter = 0
-                        for key, value in metric_items:
-                            if key != 'trainTime':
-                                col_idx = col_counter % 4
-                                with metrics_cols[col_idx]:
-                                    st.markdown(f"""
-                                        <div class="metric-card">
-                                            <div style="font-size: 0.8rem; color: #9CA3AF;">
-                                                {key.replace('_', ' ').title()}
+                        if 'metrics' not in model_data:
+                            continue
+                        
+                        has_architecture = 'architecture' in model_data
+                        
+                        with st.expander(f"📊 {model_name} - Temps: {model_data['metrics'].get('trainTime', 'N/A')}s"):
+                            # Métriques
+                            st.markdown("#### 📈 Métriques de Performance")
+                            metrics_cols = st.columns(4)
+                            
+                            col_counter = 0
+                            for key, value in model_data['metrics'].items():
+                                if key != 'trainTime':
+                                    col_idx = col_counter % 4
+                                    with metrics_cols[col_idx]:
+                                        st.markdown(f"""
+                                            <div class="metric-card">
+                                                <div style="font-size: 0.8rem; color: #9CA3AF;">
+                                                    {key.replace('_', ' ').title()}
+                                                </div>
+                                                <div style="font-size: 1.5rem; font-weight: bold; color: #3B82F6;">
+                                                    {value}
+                                                </div>
                                             </div>
-                                            <div style="font-size: 1.5rem; font-weight: bold; color: #3B82F6;">
-                                                {value}
+                                        """, unsafe_allow_html=True)
+                                    col_counter += 1
+                            
+                            # ARCHITECTURE CNN (tout le code d'affichage CNN ici)
+                            if has_architecture:
+                                st.markdown("---")
+                                st.markdown("### 🏗️ Architecture du Modèle CNN")
+                                
+                                arch = model_data['architecture']
+                                
+                                # Résumé des paramètres
+                                st.markdown("""
+                                    <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                                padding: 1.5rem; border-radius: 1rem; margin: 1rem 0;'>
+                                        <h4 style='color: white; margin: 0 0 1rem 0;'>📊 Résumé des Paramètres</h4>
+                                    </div>
+                                """, unsafe_allow_html=True)
+                                
+                                col1, col2, col3 = st.columns(3)
+                                with col1:
+                                    st.markdown(f"""
+                                        <div class="metric-card" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);">
+                                            <div style="font-size: 0.9rem; color: #dbeafe;">Total Paramètres</div>
+                                            <div style="font-size: 2rem; font-weight: bold; color: white;">
+                                                {arch['total_params']:,}
                                             </div>
                                         </div>
                                     """, unsafe_allow_html=True)
+                                with col2:
+                                    st.markdown(f"""
+                                        <div class="metric-card" style="background: linear-gradient(135deg, #065f46 0%, #10b981 100%);">
+                                            <div style="font-size: 0.9rem; color: #d1fae5;">Entraînables</div>
+                                            <div style="font-size: 2rem; font-weight: bold; color: white;">
+                                                {arch['trainable_params']:,}
+                                            </div>
+                                        </div>
+                                    """, unsafe_allow_html=True)
+                                with col3:
+                                    st.markdown(f"""
+                                        <div class="metric-card" style="background: linear-gradient(135deg, #7c2d12 0%, #f97316 100%);">
+                                            <div style="font-size: 0.9rem; color: #fed7aa;">Non-Entraînables</div>
+                                            <div style="font-size: 2rem; font-weight: bold; color: white;">
+                                                {arch['non_trainable_params']:,}
+                                            </div>
+                                        </div>
+                                    """, unsafe_allow_html=True)
+                                
+                                st.markdown("<br>", unsafe_allow_html=True)
+                                
+                                # Tableau des couches
+                                st.markdown("#### 🔍 Détail des Couches")
+                                layers_data = []
+                                for idx, layer in enumerate(arch['layers'], 1):
+                                    layers_data.append({
+                                        'N°': idx,
+                                        'Type de Couche': layer['type'],
+                                        'Output Shape': layer['output_shape'],
+                                        'Paramètres': f"{layer['params']:,}"
+                                    })
+                                
+                                df_layers = pd.DataFrame(layers_data)
+                                st.dataframe(df_layers, use_container_width=True, hide_index=True)
+                                
+                                # Visualisation graphique
+                                st.markdown("#### 📊 Visualisation de l'Architecture")
+                                
+                                col1, col2 = st.columns(2)
+                                
+                                with col1:
+                                    # Graphique des paramètres par couche
+                                    layer_names = [f"{layer['type']}" for layer in arch['layers']]
+                                    layer_params = [layer['params'] for layer in arch['layers']]
+                                    
+                                    non_zero_layers = [(name, params) for name, params in zip(layer_names, layer_params) if params > 0]
+                                    if non_zero_layers:
+                                        names, params = zip(*non_zero_layers)
+                                        
+                                        fig1 = go.Figure(data=[
+                                            go.Bar(
+                                                y=list(names)[::-1],
+                                                x=list(params)[::-1],
+                                                orientation='h',
+                                                marker=dict(
+                                                    color=list(params)[::-1],
+                                                    colorscale='Viridis',
+                                                    showscale=True
+                                                ),
+                                                text=[f"{p:,}" for p in params[::-1]],
+                                                textposition='auto'
+                                            )
+                                        ])
+                                        
+                                        fig1.update_layout(
+                                            title="Paramètres par Couche",
+                                            xaxis_title="Nombre de paramètres",
+                                            height=500,
+                                            plot_bgcolor='#0E1117',
+                                            paper_bgcolor='#0E1117',
+                                            font_color='#FAFAFA'
+                                        )
+                                        
+                                        st.plotly_chart(fig1, use_container_width=True)
+                                
+                                with col2:
+                                    # Diagramme circulaire
+                                    layer_types = {}
+                                    for layer in arch['layers']:
+                                        layer_type = layer['type'].split()[0]
+                                        if layer['params'] > 0:
+                                            layer_types[layer_type] = layer_types.get(layer_type, 0) + layer['params']
+                                    
+                                    if layer_types:
+                                        fig2 = go.Figure(data=[go.Pie(
+                                            labels=list(layer_types.keys()),
+                                            values=list(layer_types.values()),
+                                            hole=0.4,
+                                            textinfo='label+percent'
+                                        )])
+                                        
+                                        fig2.update_layout(
+                                            title="Distribution des Paramètres",
+                                            height=500,
+                                            plot_bgcolor='#0E1117',
+                                            paper_bgcolor='#0E1117',
+                                            font_color='#FAFAFA'
+                                        )
+                                        
+                                        st.plotly_chart(fig2, use_container_width=True)
+                    
+                    except Exception as e:
+                        st.error(f"Erreur lors de l'affichage de {model_name}: {str(e)}")
+                        continue
+        
+        else:
+            st.markdown("""
+                <div class="error-card">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.2rem;">⚠️</span>
+                        <span><strong>Aucun modèle entraîné</strong></span>
+                    </div>
+                    <p style="margin: 0.5rem 0 0 0; color: #FCA5A5;">Veuillez d'abord entraîner au moins un modèle dans l'onglet Entraînement</p>
+                </div>
+            """, unsafe_allow_html=True)
                                 col_counter += 1
                         
                         # Si CNN, afficher l'architecture
@@ -899,3 +1079,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
