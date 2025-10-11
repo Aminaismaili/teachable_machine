@@ -12,7 +12,8 @@ tensorflow-cpu
 
 # Visualization
 plotly
-
+matplotlib.pyplot
 # Data handling
 openpyxl
 Pillow
+
