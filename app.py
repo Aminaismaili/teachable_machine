@@ -1,4 +1,4 @@
-import streamlit as st
+*import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -124,62 +124,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-def train_model(model_name, problem_type, data_type):
-    """Simule l'entraînement d'un modèle"""
-    st.session_state.trained_models[model_name] = {'status': 'training'}
-    
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
-    for i in range(100):
-        progress_bar.progress(i + 1)
-        status_text.text(f"Entraînement {model_name}... {i + 1}%")
-        time.sleep(0.02)
-    
-    status_text.text("")
-    progress_bar.empty()
-    
-    # Vérifier si c'est un modèle CNN pour images
-    is_cnn = 'CNN' in model_name or (data_type in ['images', 'camera'] and 'NN' in model_name)
-    
-    if problem_type == 'classification':
-        if is_cnn:
-            # Métriques pour CNN
-            metrics = {
-                'accuracy': f"{0.85 + np.random.random() * 0.15:.3f}",
-                'val_accuracy': f"{0.83 + np.random.random() * 0.15:.3f}",
-                'loss': f"{0.2 + np.random.random() * 0.3:.3f}",
-                'val_loss': f"{0.25 + np.random.random() * 0.3:.3f}",
-                'precision': f"{0.80 + np.random.random() * 0.15:.3f}",
-                'recall': f"{0.82 + np.random.random() * 0.15:.3f}",
-                'trainTime': f"{np.random.random() * 5:.2f}"
-            }
-        else:
-            # Métriques pour ML classique
-            metrics = {
-                'accuracy': f"{0.85 + np.random.random() * 0.15:.3f}",
-                'precision': f"{0.80 + np.random.random() * 0.15:.3f}",
-                'recall': f"{0.82 + np.random.random() * 0.15:.3f}",
-                'f1_score': f"{0.83 + np.random.random() * 0.15:.3f}",
-                'trainTime': f"{np.random.random() * 2:.2f}"
-            }
-    else:
-        metrics = {
-            'mse': f"{0.1 + np.random.random() * 0.5:.3f}",
-            'rmse': f"{0.3 + np.random.random() * 0.3:.3f}",
-            'mae': f"{0.2 + np.random.random() * 0.3:.3f}",
-            'r2Score': f"{0.85 + np.random.random() * 0.15:.3f}",
-            'trainTime': f"{np.random.random() * 2:.2f}"
-        }
-    
-    st.session_state.trained_models[model_name] = {
-        'status': 'trained',
-        'metrics': metrics,
-        'model_type': 'cnn' if is_cnn else 'ml'
-    }
-    
-    st.rerun()
-
 def main():
     # Initialisation des états de session
     if 'step' not in st.session_state:
@@ -243,7 +187,7 @@ def main():
         st.markdown("""
             <div style='text-align: center; margin-bottom: 2rem;'>
                 <h1 style='color: #3B82F6;'>🧠</h1>
-                <h2 style='color: #FAFAFA;'>Teachable Machine</h2>
+                <h2 style='color: #FAFAFA;'>Technable Machine</h2>
                 <p style='color: #9CA3AF;'>Dark Mode</p>
             </div>
         """, unsafe_allow_html=True)
@@ -255,8 +199,8 @@ def main():
         
         module_steps = [
             {"icon": "📁", "label": "Upload Data", "step": 1},
-            {"icon": "⚙️", "label": "Configuration", "step": 2},
-            {"icon": "🚀", "label": "Entraînement", "step": 3},
+            {"icon": "⚙", "label": "Configuration", "step": 2},
+            {"icon": "🚀", "label": "Entrainement", "step": 3},
             {"icon": "📊", "label": "Résultats", "step": 4}
         ]
         
@@ -279,15 +223,10 @@ def main():
             st.markdown("""
                 <div class="error-card">
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="font-size: 1.2rem;">⚠️</span>
+                        <span style="font-size: 1.2rem;">⚠</span>
                         <span><strong>Error</strong></span>
                     </div>
-                    <p style="margin: 0.5rem 0 0 0; color: #FCA5A5;">Veuillez d'abord entraîner au moins un modèle dans l'onglet Entraînement</p>
-                </div>
-            """, unsafe_allow_html=True)
-
-if __name__ == "__main__":
-    main()0 0; color: #FCA5A5;">Entraîner d'abord un modèle</p>
+                    <p style="margin: 0.5rem 0 0 0; color: #FCA5A5;">Entraîner d'abord un modèle</p>
                 </div>
             """, unsafe_allow_html=True)
         
@@ -329,7 +268,7 @@ if __name__ == "__main__":
     if st.session_state.step == 1:
         st.markdown("## 📁 Upload des Données")
         
-        tab1, tab2, tab3 = st.tabs(["📊 Données Tabulaires", "🖼️ Images", "📷 Caméra"])
+        tab1, tab2, tab3 = st.tabs(["📊 Données Tabulaire", "🖼 Images", "📷 Caméra"])
         
         with tab1:
             st.markdown("### Données CSV/Excel")
@@ -483,7 +422,7 @@ if __name__ == "__main__":
 
     # Étape 2: Configuration
     elif st.session_state.step == 2 and st.session_state.problem_type:
-        st.markdown("## ⚙️ Configuration")
+        st.markdown("## ⚙ Configuration")
         
         # Aperçu du dataset
         st.markdown("### Aperçu du Dataset")
@@ -545,6 +484,8 @@ if __name__ == "__main__":
                 st.session_state.step = 4
                 st.rerun()
 
+   # Remplacez UNIQUEMENT la section "Étape 4: Résultats" (ligne ~595) par ceci :
+
     # Étape 4: Résultats
     elif st.session_state.step == 4:
         st.markdown("## 📊 Résultats")
@@ -564,24 +505,18 @@ if __name__ == "__main__":
             for model_name in trained_models_list:
                 model_data = st.session_state.trained_models[model_name]
                 
-                # Gestion flexible des métriques selon le type de modèle
                 try:
                     if st.session_state.problem_type == 'classification':
-                        # Essayer différentes clés possibles pour l'accuracy
+                        # Gestion flexible pour CNN et ML classique
                         if 'accuracy' in model_data['metrics']:
                             score = float(model_data['metrics']['accuracy']) * 100
                         elif 'val_accuracy' in model_data['metrics']:
                             score = float(model_data['metrics']['val_accuracy']) * 100
-                        elif 'acc' in model_data['metrics']:
-                            score = float(model_data['metrics']['acc']) * 100
                         else:
-                            score = 85.0  # Score par défaut si aucune métrique trouvée
+                            score = 85.0
                     else:
-                        # Pour la régression
                         if 'r2Score' in model_data['metrics']:
                             score = float(model_data['metrics']['r2Score']) * 100
-                        elif 'r2_score' in model_data['metrics']:
-                            score = float(model_data['metrics']['r2_score']) * 100
                         else:
                             score = 85.0
                     
@@ -600,18 +535,12 @@ if __name__ == "__main__":
                 fig = px.bar(df_comparison, x='Modèle', y='Score',
                              title="Comparaison des Performances",
                              color='Score', color_continuous_scale='viridis')
-                fig.update_layout(
-                    plot_bgcolor='#0E1117',
-                    paper_bgcolor='#0E1117',
-                    font_color='#FAFAFA'
-                )
                 st.plotly_chart(fig, use_container_width=True)
                 
                 # Métriques détaillées
                 for model_name in trained_models_list:
                     model_data = st.session_state.trained_models[model_name]
-                    train_time = model_data['metrics'].get('trainTime', 'N/A')
-                    with st.expander(f"📊 {model_name} - Temps: {train_time}s"):
+                    with st.expander(f"📊 {model_name} - Temps: {model_data['metrics'].get('trainTime', 'N/A')}s"):
                         metrics_cols = st.columns(4)
                         metric_items = list(model_data['metrics'].items())
                         
@@ -630,14 +559,57 @@ if __name__ == "__main__":
                                             </div>
                                         </div>
                                     """, unsafe_allow_html=True)
-                                col_counter += 1
-            else:
-                st.error("Aucune donnée de comparaison disponible")
+                    
+def train_model(model_name, problem_type, data_type):
+    """Simule l'entraînement d'un modèle"""
+    st.session_state.trained_models[model_name] = {'status': 'training'}
+    
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    for i in range(100):
+        progress_bar.progress(i + 1)
+        status_text.text(f"Entraînement {model_name}... {i + 1}%")
+        time.sleep(0.02)
+    
+    status_text.text("")
+    progress_bar.empty()
+    
+    # Détection CNN
+    is_cnn = 'CNN' in model_name or (data_type in ['images', 'camera'] and 'NN' in model_name)
+    
+    if problem_type == 'classification':
+        if is_cnn:
+            metrics = {
+                'accuracy': f"{0.85 + np.random.random() * 0.15:.3f}",
+                'val_accuracy': f"{0.83 + np.random.random() * 0.15:.3f}",
+                'loss': f"{0.2 + np.random.random() * 0.3:.3f}",
+                'val_loss': f"{0.25 + np.random.random() * 0.3:.3f}",
+                'trainTime': f"{np.random.random() * 5:.2f}"
+            }
         else:
-            st.markdown("""
-                <div class="error-card">
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="font-size: 1.2rem;">⚠️</span>
-                        <span><strong>Aucun modèle entraîné</strong></span>
-                    </div>
-                    <p style="margin: 0.5rem 0
+            metrics = {
+                'accuracy': f"{0.85 + np.random.random() * 0.15:.3f}",
+                'precision': f"{0.80 + np.random.random() * 0.15:.3f}",
+                'recall': f"{0.82 + np.random.random() * 0.15:.3f}",
+                'f1_score': f"{0.83 + np.random.random() * 0.15:.3f}",
+                'trainTime': f"{np.random.random() * 2:.2f}"
+            }
+    else:
+        metrics = {
+            'mse': f"{0.1 + np.random.random() * 0.5:.3f}",
+            'rmse': f"{0.3 + np.random.random() * 0.3:.3f}",
+            'mae': f"{0.2 + np.random.random() * 0.3:.3f}",
+            'r2Score': f"{0.85 + np.random.random() * 0.15:.3f}",
+            'trainTime': f"{np.random.random() * 2:.2f}"
+        }
+    
+    st.session_state.trained_models[model_name] = {
+        'status': 'trained',
+        'metrics': metrics
+    }
+    
+    st.rerun()
+
+if _name_ == "_main_":
+    main()
