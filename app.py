@@ -840,9 +840,7 @@ def main():
                     </div>
                     <p style="margin: 0.5rem 0 0 0; color: #FCA5A5;">Veuillez d'abord entraîner au moins un modèle dans l'onglet Entraînement</p>
                 </div>
-            """, unsafe_allow_html=True)
-                                col_counter += 1
-                        
+            """, unsafe_allow_html=True)                      
                         # Si CNN, afficher l'architecture
                         if has_architecture:
                             st.markdown("---")
@@ -1077,5 +1075,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
