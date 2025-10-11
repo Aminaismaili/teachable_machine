@@ -1,4 +1,4 @@
-*import streamlit as st
+import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -124,6 +124,57 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+def train_model(model_name, problem_type, data_type):
+    """Simule l'entraînement d'un modèle"""
+    st.session_state.trained_models[model_name] = {'status': 'training'}
+    
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    for i in range(100):
+        progress_bar.progress(i + 1)
+        status_text.text(f"Entraînement {model_name}... {i + 1}%")
+        time.sleep(0.02)
+    
+    status_text.text("")
+    progress_bar.empty()
+    
+    # Détection CNN
+    is_cnn = 'CNN' in model_name or (data_type in ['images', 'camera'] and 'NN' in model_name)
+    
+    if problem_type == 'classification':
+        if is_cnn:
+            metrics = {
+                'accuracy': f"{0.85 + np.random.random() * 0.15:.3f}",
+                'val_accuracy': f"{0.83 + np.random.random() * 0.15:.3f}",
+                'loss': f"{0.2 + np.random.random() * 0.3:.3f}",
+                'val_loss': f"{0.25 + np.random.random() * 0.3:.3f}",
+                'trainTime': f"{np.random.random() * 5:.2f}"
+            }
+        else:
+            metrics = {
+                'accuracy': f"{0.85 + np.random.random() * 0.15:.3f}",
+                'precision': f"{0.80 + np.random.random() * 0.15:.3f}",
+                'recall': f"{0.82 + np.random.random() * 0.15:.3f}",
+                'f1_score': f"{0.83 + np.random.random() * 0.15:.3f}",
+                'trainTime': f"{np.random.random() * 2:.2f}"
+            }
+    else:
+        metrics = {
+            'mse': f"{0.1 + np.random.random() * 0.5:.3f}",
+            'rmse': f"{0.3 + np.random.random() * 0.3:.3f}",
+            'mae': f"{0.2 + np.random.random() * 0.3:.3f}",
+            'r2Score': f"{0.85 + np.random.random() * 0.15:.3f}",
+            'trainTime': f"{np.random.random() * 2:.2f}"
+        }
+    
+    st.session_state.trained_models[model_name] = {
+        'status': 'trained',
+        'metrics': metrics
+    }
+    
+    st.rerun()
+
 def main():
     # Initialisation des états de session
     if 'step' not in st.session_state:
@@ -149,8 +200,7 @@ def main():
     algorithms = {
         'classification': {
             'Linear Models': ['Logistic Regression', 'SGD Classifier', 'Perceptron'],
-            'Tree Based': ['Decision Tree', 'Random Forest', 'Extra Trees', 'Gradient Boosting', 'AdaBoost', 'XGBoost',
-                           'LightGBM'],
+            'Tree Based': ['Decision Tree', 'Random Forest', 'Extra Trees', 'Gradient Boosting', 'AdaBoost', 'XGBoost', 'LightGBM'],
             'SVM': ['SVC (Linear)', 'SVC (RBF)', 'SVC (Poly)', 'Nu-SVC'],
             'Naive Bayes': ['Gaussian NB', 'Multinomial NB', 'Bernoulli NB'],
             'Neighbors': ['KNN', 'Radius Neighbors'],
@@ -158,8 +208,7 @@ def main():
         },
         'regression': {
             'Linear Models': ['Linear Regression', 'Ridge', 'Lasso', 'Elastic Net', 'SGD Regressor'],
-            'Tree Based': ['Decision Tree', 'Random Forest', 'Extra Trees', 'Gradient Boosting', 'AdaBoost', 'XGBoost',
-                           'LightGBM'],
+            'Tree Based': ['Decision Tree', 'Random Forest', 'Extra Trees', 'Gradient Boosting', 'AdaBoost', 'XGBoost', 'LightGBM'],
             'SVM': ['SVR (Linear)', 'SVR (RBF)', 'SVR (Poly)'],
             'Neighbors': ['KNN Regressor', 'Radius Neighbors'],
             'Neural Networks': ['MLP Regressor', 'Simple NN', 'Deep NN']
@@ -187,7 +236,7 @@ def main():
         st.markdown("""
             <div style='text-align: center; margin-bottom: 2rem;'>
                 <h1 style='color: #3B82F6;'>🧠</h1>
-                <h2 style='color: #FAFAFA;'>Technable Machine</h2>
+                <h2 style='color: #FAFAFA;'>Teachable Machine</h2>
                 <p style='color: #9CA3AF;'>Dark Mode</p>
             </div>
         """, unsafe_allow_html=True)
@@ -199,8 +248,8 @@ def main():
         
         module_steps = [
             {"icon": "📁", "label": "Upload Data", "step": 1},
-            {"icon": "⚙", "label": "Configuration", "step": 2},
-            {"icon": "🚀", "label": "Entrainement", "step": 3},
+            {"icon": "⚙️", "label": "Configuration", "step": 2},
+            {"icon": "🚀", "label": "Entraînement", "step": 3},
             {"icon": "📊", "label": "Résultats", "step": 4}
         ]
         
@@ -223,7 +272,7 @@ def main():
             st.markdown("""
                 <div class="error-card">
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="font-size: 1.2rem;">⚠</span>
+                        <span style="font-size: 1.2rem;">⚠️</span>
                         <span><strong>Error</strong></span>
                     </div>
                     <p style="margin: 0.5rem 0 0 0; color: #FCA5A5;">Entraîner d'abord un modèle</p>
@@ -268,7 +317,7 @@ def main():
     if st.session_state.step == 1:
         st.markdown("## 📁 Upload des Données")
         
-        tab1, tab2, tab3 = st.tabs(["📊 Données Tabulaire", "🖼 Images", "📷 Caméra"])
+        tab1, tab2, tab3 = st.tabs(["📊 Données Tabulaires", "🖼️ Images", "📷 Caméra"])
         
         with tab1:
             st.markdown("### Données CSV/Excel")
@@ -422,7 +471,7 @@ def main():
 
     # Étape 2: Configuration
     elif st.session_state.step == 2 and st.session_state.problem_type:
-        st.markdown("## ⚙ Configuration")
+        st.markdown("## ⚙️ Configuration")
         
         # Aperçu du dataset
         st.markdown("### Aperçu du Dataset")
@@ -484,9 +533,7 @@ def main():
                 st.session_state.step = 4
                 st.rerun()
 
-   # Remplacez UNIQUEMENT la section "Étape 4: Résultats" (ligne ~595) par ceci :
-
-    # Étape 4: Résultats
+    # Étape 4: Résultats (CORRIGÉ)
     elif st.session_state.step == 4:
         st.markdown("## 📊 Résultats")
         
@@ -559,57 +606,17 @@ def main():
                                             </div>
                                         </div>
                                     """, unsafe_allow_html=True)
-                    
-def train_model(model_name, problem_type, data_type):
-    """Simule l'entraînement d'un modèle"""
-    st.session_state.trained_models[model_name] = {'status': 'training'}
-    
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
-    for i in range(100):
-        progress_bar.progress(i + 1)
-        status_text.text(f"Entraînement {model_name}... {i + 1}%")
-        time.sleep(0.02)
-    
-    status_text.text("")
-    progress_bar.empty()
-    
-    # Détection CNN
-    is_cnn = 'CNN' in model_name or (data_type in ['images', 'camera'] and 'NN' in model_name)
-    
-    if problem_type == 'classification':
-        if is_cnn:
-            metrics = {
-                'accuracy': f"{0.85 + np.random.random() * 0.15:.3f}",
-                'val_accuracy': f"{0.83 + np.random.random() * 0.15:.3f}",
-                'loss': f"{0.2 + np.random.random() * 0.3:.3f}",
-                'val_loss': f"{0.25 + np.random.random() * 0.3:.3f}",
-                'trainTime': f"{np.random.random() * 5:.2f}"
-            }
+                                col_counter += 1
         else:
-            metrics = {
-                'accuracy': f"{0.85 + np.random.random() * 0.15:.3f}",
-                'precision': f"{0.80 + np.random.random() * 0.15:.3f}",
-                'recall': f"{0.82 + np.random.random() * 0.15:.3f}",
-                'f1_score': f"{0.83 + np.random.random() * 0.15:.3f}",
-                'trainTime': f"{np.random.random() * 2:.2f}"
-            }
-    else:
-        metrics = {
-            'mse': f"{0.1 + np.random.random() * 0.5:.3f}",
-            'rmse': f"{0.3 + np.random.random() * 0.3:.3f}",
-            'mae': f"{0.2 + np.random.random() * 0.3:.3f}",
-            'r2Score': f"{0.85 + np.random.random() * 0.15:.3f}",
-            'trainTime': f"{np.random.random() * 2:.2f}"
-        }
-    
-    st.session_state.trained_models[model_name] = {
-        'status': 'trained',
-        'metrics': metrics
-    }
-    
-    st.rerun()
+            st.markdown("""
+                <div class="error-card">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.2rem;">⚠️</span>
+                        <span><strong>Aucun modèle entraîné</strong></span>
+                    </div>
+                    <p style="margin: 0.5rem 0 0 0; color: #FCA5A5;">Veuillez d'abord entraîner au moins un modèle dans l'onglet Entraînement</p>
+                </div>
+            """, unsafe_allow_html=True)
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     main()
