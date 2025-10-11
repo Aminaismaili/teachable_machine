@@ -1,1080 +1,1120 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
-import plotly.express as px
-from datetime import datetime
-import time
+import matplotlib.pyplot as plt
+from io import BytesIO
+import pickle
 from PIL import Image
-import io
 import os
+import cv2
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score, f1_score,
+    confusion_matrix, classification_report, mean_squared_error,
+    mean_absolute_error, r2_score
+)
+
+# Classification algorithms
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, AdaBoostClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.naive_bayes import GaussianNB
+
+# Regression algorithms
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, AdaBoostRegressor
+from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
+from sklearn.svm import SVR
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.tree import DecisionTreeRegressor
+
+# Deep Learning
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers, models
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 # Configuration de la page
 st.set_page_config(
-    page_title="Teachable Machine - Dark Mode",
-    page_icon="🧠",
+    page_title="Teachable Machine",
+    page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# CSS pour le mode sombre
+# Style CSS personnalisé - THÈME NOIR
 st.markdown("""
     <style>
     .main {
         background-color: #0E1117;
         color: #FAFAFA;
     }
-    
-    .sidebar .sidebar-content {
-        background-color: #262730;
+    .stApp {
+        background: linear-gradient(135deg, #0E1117 0%, #1E1E1E 50%, #0E1117 100%);
         color: #FAFAFA;
     }
-    
-    .header-section {
-        background: linear-gradient(135deg, #1E40AF 0%, #7E22CE 100%);
-        padding: 2rem;
-        border-radius: 1rem;
-        margin-bottom: 2rem;
-        border: 1px solid #374151;
+    .stSidebar {
+        background: linear-gradient(180deg, #1E1E1E 0%, #0E1117 100%);
     }
-    
-    .module-card {
-        background-color: #1F2937;
-        padding: 1.5rem;
-        border-radius: 0.75rem;
-        margin: 0.5rem 0;
-        border-left: 4px solid #3B82F6;
-        border: 1px solid #374151;
+    h1, h2, h3, h4, h5, h6 {
+        color: #FFFFFF;
+        font-weight: bold;
     }
-    
-    .error-card {
-        background-color: #7F1D1D;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 1rem 0;
-        border: 1px solid #DC2626;
+    .stRadio > label {
+        color: #FFFFFF !important;
     }
-    
-    .demo-card {
-        background-color: #1F2937;
-        padding: 2rem;
-        border-radius: 1rem;
-        margin: 1rem 0;
-        border: 1px solid #374151;
-        text-align: center;
+    .stSelectbox > label {
+        color: #FFFFFF !important;
     }
-    
-    .metric-card {
-        background-color: #111827;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        text-align: center;
-        border: 1px solid #374151;
+    .stMultiSelect > label {
+        color: #FFFFFF !important;
     }
-    
-    .upload-section {
-        border: 2px dashed #4B5563;
-        border-radius: 1rem;
-        padding: 2rem;
-        text-align: center;
-        margin: 1rem 0;
-        background-color: #1F2937;
+    .stSlider > label {
+        color: #FFFFFF !important;
     }
-    
-    .model-card {
-        background-color: #1F2937;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 0.5rem 0;
-        border: 1px solid #374151;
+    .stNumberInput > label {
+        color: #FFFFFF !important;
     }
-    
-    .stButton button {
-        background-color: #3B82F6;
-        color: white;
-        border: none;
-        border-radius: 0.5rem;
-        padding: 0.5rem 1rem;
+    .stButton>button {
         width: 100%;
+        background: linear-gradient(to right, #667eea, #764ba2);
+        color: white;
+        font-weight: bold;
+        border-radius: 10px;
+        padding: 15px;
+        border: none;
+        transition: all 0.3s ease;
     }
-    
-    .stButton button:hover {
-        background-color: #2563EB;
+    .stButton>button:hover {
+        transform: scale(1.02);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
     }
-    
-    .tab-content {
-        padding: 1rem 0;
+    .stDataFrame {
+        background-color: #1E1E1E;
+        color: #FAFAFA;
     }
-    
-    .success-message {
-        background-color: #065F46;
-        color: #D1FAE5;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        border: 1px solid #047857;
+    .stMetric {
+        background-color: rgba(30, 30, 30, 0.7);
+        border-radius: 10px;
+        padding: 10px;
+        border: 1px solid #333;
     }
-    
-    .info-message {
-        background-color: #1E40AF;
-        color: #DBEAFE;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        border: 1px solid #3B82F6;
+    .css-1d391kg, .css-12oz5g7 {
+        background-color: #0E1117;
+    }
+    .stAlert {
+        background-color: rgba(30, 30, 30, 0.8);
+        border: 1px solid #444;
+    }
+    .stProgress > div > div > div {
+        background: linear-gradient(to right, #667eea, #764ba2);
+    }
+    .stMarkdown {
+        color: #FAFAFA;
+    }
+    .stFileUploader > label {
+        color: #FFFFFF !important;
+    }
+    .stFileUploader {
+        background-color: rgba(30, 30, 30, 0.5);
+        border-radius: 10px;
+        padding: 20px;
+        border: 2px dashed #444;
+    }
+    div[data-baseweb="select"] > div {
+        background-color: #1E1E1E;
+        color: #FAFAFA;
+    }
+    div[data-baseweb="input"] > div {
+        background-color: #1E1E1E;
+        color: #FAFAFA;
+    }
+    .stRadio [role="radiogroup"] {
+        background-color: #1E1E1E;
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid #333;
+    }
+    .stSelectbox [data-baseweb="select"] {
+        background-color: #1E1E1E;
+        color: #FAFAFA;
+    }
+    .stMultiSelect [data-baseweb="select"] {
+        background-color: #1E1E1E;
+        color: #FAFAFA;
+    }
+    .stSlider [data-baseweb="slider"] {
+        color: #667eea;
     }
     </style>
 """, unsafe_allow_html=True)
 
-def train_model(model_name, problem_type, data_type):
-    """Simule l'entraînement d'un modèle"""
-    st.session_state.trained_models[model_name] = {'status': 'training'}
+# Configuration matplotlib pour le thème noir
+plt.rcParams['figure.facecolor'] = '#1E1E1E'
+plt.rcParams['axes.facecolor'] = '#1E1E1E'
+plt.rcParams['axes.edgecolor'] = '#FFFFFF'
+plt.rcParams['axes.labelcolor'] = '#FFFFFF'
+plt.rcParams['text.color'] = '#FFFFFF'
+plt.rcParams['xtick.color'] = '#FFFFFF'
+plt.rcParams['ytick.color'] = '#FFFFFF'
+plt.rcParams['grid.color'] = '#444444'
+
+# ==================== CLASSES ====================
+
+class DataProcessor:
+    """Classe pour le preprocessing des données"""
     
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
-    # Détection CNN
-    is_cnn = 'CNN' in model_name or (data_type in ['images', 'camera'] and 'NN' in model_name)
-    
-    # Si c'est un CNN, créer un résumé d'architecture simulé
-    if is_cnn:
-        # Calculer les paramètres de manière cohérente
-        conv1_params = 896  # (3*3*3+1)*32
-        conv2_params = 18496  # (3*3*32+1)*64
-        conv3_params = 73856  # (3*3*64+1)*128
-        dense1_params = 1048704  # 8192*128 + 128
-        dense2_params = 8256  # 128*64 + 64
-        dense3_params = 195  # 64*3 + 3
+    def _init_(self):
+        self.scaler = StandardScaler()
+        self.label_encoders = {}
         
-        total_params = conv1_params + conv2_params + conv3_params + dense1_params + dense2_params + dense3_params
+    def load_data(self, file):
+        """Charge les données depuis un fichier"""
+        try:
+            if file.name.endswith('.csv'):
+                df = pd.read_csv(file)
+            elif file.name.endswith(('.xls', '.xlsx')):
+                df = pd.read_excel(file)
+            else:
+                return None, "Format non supporté"
+            return df, None
+        except Exception as e:
+            return None, str(e)
+    
+    def preprocess_data(self, df, target_col, test_size=0.2, random_state=42):
+        """Prétraitement des données tabulaires"""
+        # Séparation features et target
+        X = df.drop(columns=[target_col])
+        y = df[target_col]
         
-        architecture_summary = {
-            'total_params': total_params,
-            'trainable_params': total_params,
-            'non_trainable_params': 0,
-            'layers': [
-                {'type': 'Conv2D', 'output_shape': '(None, 64, 64, 32)', 'params': conv1_params},
-                {'type': 'BatchNormalization', 'output_shape': '(None, 64, 64, 32)', 'params': 128},
-                {'type': 'MaxPooling2D', 'output_shape': '(None, 32, 32, 32)', 'params': 0},
-                {'type': 'Dropout', 'output_shape': '(None, 32, 32, 32)', 'params': 0},
-                {'type': 'Conv2D', 'output_shape': '(None, 32, 32, 64)', 'params': conv2_params},
-                {'type': 'BatchNormalization', 'output_shape': '(None, 32, 32, 64)', 'params': 256},
-                {'type': 'MaxPooling2D', 'output_shape': '(None, 16, 16, 64)', 'params': 0},
-                {'type': 'Dropout', 'output_shape': '(None, 16, 16, 64)', 'params': 0},
-                {'type': 'Conv2D', 'output_shape': '(None, 16, 16, 128)', 'params': conv3_params},
-                {'type': 'BatchNormalization', 'output_shape': '(None, 16, 16, 128)', 'params': 512},
-                {'type': 'MaxPooling2D', 'output_shape': '(None, 8, 8, 128)', 'params': 0},
-                {'type': 'Dropout', 'output_shape': '(None, 8, 8, 128)', 'params': 0},
-                {'type': 'Flatten', 'output_shape': '(None, 8192)', 'params': 0},
-                {'type': 'Dense', 'output_shape': '(None, 128)', 'params': dense1_params},
-                {'type': 'BatchNormalization', 'output_shape': '(None, 128)', 'params': 512},
-                {'type': 'Dropout', 'output_shape': '(None, 128)', 'params': 0},
-                {'type': 'Dense', 'output_shape': '(None, 64)', 'params': dense2_params},
-                {'type': 'BatchNormalization', 'output_shape': '(None, 64)', 'params': 256},
-                {'type': 'Dropout', 'output_shape': '(None, 64)', 'params': 0},
-                {'type': 'Dense (Output)', 'output_shape': '(None, 3)', 'params': dense3_params}
-            ]
-        }
+        # Encodage des variables catégorielles dans X
+        for col in X.select_dtypes(include=['object']).columns:
+            le = LabelEncoder()
+            X[col] = le.fit_transform(X[col].astype(str))
+            self.label_encoders[col] = le
+        
+        # Encodage de y si catégoriel
+        if y.dtype == 'object':
+            le = LabelEncoder()
+            y = le.fit_transform(y)
+            self.label_encoders[target_col] = le
+        
+        # Split des données
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=test_size, random_state=random_state
+        )
+        
+        # Normalisation
+        X_train_scaled = self.scaler.fit_transform(X_train)
+        X_test_scaled = self.scaler.transform(X_test)
+        
+        return X_train_scaled, X_test_scaled, y_train, y_test, X.columns
+
+class ImageProcessor:
+    """Classe pour le traitement des images"""
     
-    for i in range(100):
-        progress_bar.progress(i + 1)
-        status_text.text(f"Entraînement {model_name}... {i + 1}%")
-        time.sleep(0.02)
+    def _init_(self, img_size=(128, 128)):
+        self.img_size = img_size
+        self.label_encoder = LabelEncoder()
+        
+    def load_images_from_zip(self, zip_file):
+        """Charge les images depuis un fichier zip"""
+        import zipfile
+        import tempfile
+        
+        images = []
+        labels = []
+        
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+                zip_ref.extractall(temp_dir)
+            
+            for root, dirs, files in os.walk(temp_dir):
+                for file in files:
+                    if file.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff')):
+                        # Le nom du dossier est le label
+                        label = os.path.basename(root)
+                        img_path = os.path.join(root, file)
+                        
+                        try:
+                            # Charger et prétraiter l'image
+                            img = Image.open(img_path)
+                            img = img.convert('RGB')
+                            img = img.resize(self.img_size)
+                            img_array = np.array(img) / 255.0
+                            
+                            images.append(img_array)
+                            labels.append(label)
+                        except Exception as e:
+                            st.warning(f"Impossible de charger l'image {file}: {e}")
+        
+        return np.array(images), np.array(labels)
     
-    status_text.text("")
-    progress_bar.empty()
+    def load_images_from_folders(self, uploaded_files):
+        """Charge les images depuis des fichiers uploadés"""
+        images = []
+        labels = []
+        
+        for uploaded_file in uploaded_files:
+            if uploaded_file.name.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff')):
+                try:
+                    # Utiliser le nom du fichier ou du dossier comme label
+                    label = uploaded_file.name.split('_')[0]  # Première partie du nom comme label
+                    
+                    # Charger et prétraiter l'image
+                    img = Image.open(uploaded_file)
+                    img = img.convert('RGB')
+                    img = img.resize(self.img_size)
+                    img_array = np.array(img) / 255.0
+                    
+                    images.append(img_array)
+                    labels.append(label)
+                except Exception as e:
+                    st.warning(f"Impossible de charger l'image {uploaded_file.name}: {e}")
+        
+        return np.array(images), np.array(labels)
     
-    if problem_type == 'classification':
-        if is_cnn:
-            metrics = {
-                'accuracy': f"{0.85 + np.random.random() * 0.15:.3f}",
-                'val_accuracy': f"{0.83 + np.random.random() * 0.15:.3f}",
-                'loss': f"{0.2 + np.random.random() * 0.3:.3f}",
-                'val_loss': f"{0.25 + np.random.random() * 0.3:.3f}",
-                'precision': f"{0.80 + np.random.random() * 0.15:.3f}",
-                'recall': f"{0.82 + np.random.random() * 0.15:.3f}",
-                'trainTime': f"{np.random.random() * 5:.2f}"
+    def preprocess_images(self, images, labels, test_size=0.2, random_state=42):
+        """Prétraitement des images"""
+        # Encodage des labels
+        y_encoded = self.label_encoder.fit_transform(labels)
+        
+        # Split des données
+        X_train, X_test, y_train, y_test = train_test_split(
+            images, y_encoded, test_size=test_size, random_state=random_state
+        )
+        
+        return X_train, X_test, y_train, y_test
+
+class ClassicalMLTrainer:
+    """Classe pour entraîner les modèles ML classiques"""
+    
+    def _init_(self, problem_type='classification'):
+        self.problem_type = problem_type
+        self.models = {}
+        self.results = {}
+        
+    def get_models(self):
+        """Retourne les modèles disponibles selon le type de problème"""
+        if self.problem_type == 'classification':
+            return {
+                'Random Forest': RandomForestClassifier(random_state=42),
+                'Logistic Regression': LogisticRegression(random_state=42, max_iter=1000),
+                'SVM': SVC(random_state=42),
+                'KNN': KNeighborsClassifier(),
+                'Decision Tree': DecisionTreeClassifier(random_state=42),
+                'Gradient Boosting': GradientBoostingClassifier(random_state=42),
+                'AdaBoost': AdaBoostClassifier(random_state=42),
+                'Naive Bayes': GaussianNB()
             }
+        else:  # regression
+            return {
+                'Random Forest': RandomForestRegressor(random_state=42),
+                'Linear Regression': LinearRegression(),
+                'Ridge': Ridge(random_state=42),
+                'Lasso': Lasso(random_state=42),
+                'ElasticNet': ElasticNet(random_state=42),
+                'SVR': SVR(),
+                'KNN': KNeighborsRegressor(),
+                'Decision Tree': DecisionTreeRegressor(random_state=42),
+                'Gradient Boosting': GradientBoostingRegressor(random_state=42)
+            }
+    
+    def train_models(self, X_train, X_test, y_train, y_test, selected_models):
+        """Entraîne les modèles sélectionnés"""
+        available_models = self.get_models()
+        
+        for model_name in selected_models:
+            if model_name in available_models:
+                with st.spinner(f'🔄 Entraînement de {model_name}...'):
+                    model = available_models[model_name]
+                    model.fit(X_train, y_train)
+                    y_pred = model.predict(X_test)
+                    
+                    self.models[model_name] = model
+                    self.results[model_name] = {
+                        'predictions': y_pred,
+                        'metrics': self._calculate_metrics(y_test, y_pred)
+                    }
+        
+        return self.results
+    
+    def _calculate_metrics(self, y_true, y_pred):
+        """Calcule les métriques selon le type de problème"""
+        if self.problem_type == 'classification':
+            return {
+                'Accuracy': accuracy_score(y_true, y_pred),
+                'Precision': precision_score(y_true, y_pred, average='weighted', zero_division=0),
+                'Recall': recall_score(y_true, y_pred, average='weighted', zero_division=0),
+                'F1-Score': f1_score(y_true, y_pred, average='weighted', zero_division=0)
+            }
+        else:  # regression
+            return {
+                'R² Score': r2_score(y_true, y_pred),
+                'MSE': mean_squared_error(y_true, y_pred),
+                'RMSE': np.sqrt(mean_squared_error(y_true, y_pred)),
+                'MAE': mean_absolute_error(y_true, y_pred)
+            }
+
+class DeepLearningTrainer:
+    """Classe pour créer et entraîner des réseaux de neurones"""
+    
+    def _init_(self, problem_type='classification', input_shape=None):
+        self.problem_type = problem_type
+        self.input_shape = input_shape
+        self.model = None
+        self.history = None
+        
+    def build_model(self, input_dim, output_dim, architecture='default', custom_params=None):
+        """Construit un réseau de neurones pour données tabulaires"""
+        model = models.Sequential()
+        
+        if architecture == 'default':
+            # Architecture par défaut
+            model.add(layers.Dense(128, activation='relu', input_shape=(input_dim,)))
+            model.add(layers.Dropout(0.3))
+            model.add(layers.Dense(64, activation='relu'))
+            model.add(layers.Dropout(0.3))
+            model.add(layers.Dense(32, activation='relu'))
         else:
-            metrics = {
-                'accuracy': f"{0.85 + np.random.random() * 0.15:.3f}",
-                'precision': f"{0.80 + np.random.random() * 0.15:.3f}",
-                'recall': f"{0.82 + np.random.random() * 0.15:.3f}",
-                'f1_score': f"{0.83 + np.random.random() * 0.15:.3f}",
-                'trainTime': f"{np.random.random() * 2:.2f}"
-            }
-    else:
-        metrics = {
-            'mse': f"{0.1 + np.random.random() * 0.5:.3f}",
-            'rmse': f"{0.3 + np.random.random() * 0.3:.3f}",
-            'mae': f"{0.2 + np.random.random() * 0.3:.3f}",
-            'r2Score': f"{0.85 + np.random.random() * 0.15:.3f}",
-            'trainTime': f"{np.random.random() * 2:.2f}"
-        }
+            # Architecture personnalisée
+            n_layers = custom_params.get('n_layers', 3)
+            neurons = custom_params.get('neurons', 128)
+            dropout = custom_params.get('dropout', 0.3)
+            
+            model.add(layers.Dense(neurons, activation='relu', input_shape=(input_dim,)))
+            model.add(layers.Dropout(dropout))
+            
+            for i in range(n_layers - 1):
+                neurons = neurons // 2
+                model.add(layers.Dense(neurons, activation='relu'))
+                model.add(layers.Dropout(dropout))
+        
+        # Couche de sortie
+        if self.problem_type == 'classification':
+            if output_dim == 2:
+                model.add(layers.Dense(1, activation='sigmoid'))
+                model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+            else:
+                model.add(layers.Dense(output_dim, activation='softmax'))
+                model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+        else:  # regression
+            model.add(layers.Dense(1))
+            model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+        
+        self.model = model
+        return model
     
-    # Sauvegarder avec architecture si CNN
-    model_data = {
-        'status': 'trained',
-        'metrics': metrics
-    }
+    def build_cnn_model(self, output_dim, architecture='default', custom_params=None):
+        """Construit un modèle CNN pour les images"""
+        model = models.Sequential()
+        
+        if architecture == 'default':
+            # Architecture CNN par défaut
+            model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=self.input_shape))
+            model.add(layers.MaxPooling2D((2, 2)))
+            model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+            model.add(layers.MaxPooling2D((2, 2)))
+            model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+            model.add(layers.Flatten())
+            model.add(layers.Dense(64, activation='relu'))
+            model.add(layers.Dropout(0.5))
+        else:
+            # Architecture personnalisée
+            n_conv_layers = custom_params.get('n_conv_layers', 3)
+            filters = custom_params.get('filters', 32)
+            dense_neurons = custom_params.get('dense_neurons', 64)
+            dropout = custom_params.get('dropout', 0.5)
+            
+            model.add(layers.Conv2D(filters, (3, 3), activation='relu', input_shape=self.input_shape))
+            model.add(layers.MaxPooling2D((2, 2)))
+            
+            for i in range(n_conv_layers - 1):
+                filters *= 2
+                model.add(layers.Conv2D(filters, (3, 3), activation='relu'))
+                model.add(layers.MaxPooling2D((2, 2)))
+            
+            model.add(layers.Flatten())
+            model.add(layers.Dense(dense_neurons, activation='relu'))
+            model.add(layers.Dropout(dropout))
+        
+        # Couche de sortie
+        if output_dim == 2:
+            model.add(layers.Dense(1, activation='sigmoid'))
+            model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+        else:
+            model.add(layers.Dense(output_dim, activation='softmax'))
+            model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+        
+        self.model = model
+        return model
     
-    if is_cnn:
-        model_data['architecture'] = architecture_summary
+    def train(self, X_train, y_train, X_val, y_val, epochs=100, batch_size=32):
+        """Entraîne le modèle"""
+        early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+        
+        self.history = self.model.fit(
+            X_train, y_train,
+            validation_data=(X_val, y_val),
+            epochs=epochs,
+            batch_size=batch_size,
+            callbacks=[early_stopping],
+            verbose=0
+        )
+        
+        return self.history
     
-    st.session_state.trained_models[model_name] = model_data
-    
-    st.rerun()
+    def evaluate(self, X_test, y_test):
+        """Évalue le modèle"""
+        y_pred = self.model.predict(X_test)
+        
+        if self.problem_type == 'classification':
+            if y_pred.shape[1] == 1:  # Binary
+                y_pred_classes = (y_pred > 0.5).astype(int).flatten()
+            else:  # Multiclass
+                y_pred_classes = np.argmax(y_pred, axis=1)
+            
+            return {
+                'Accuracy': accuracy_score(y_test, y_pred_classes),
+                'Precision': precision_score(y_test, y_pred_classes, average='weighted', zero_division=0),
+                'Recall': recall_score(y_test, y_pred_classes, average='weighted', zero_division=0),
+                'F1-Score': f1_score(y_test, y_pred_classes, average='weighted', zero_division=0)
+            }, y_pred_classes
+        else:
+            return {
+                'R² Score': r2_score(y_test, y_pred),
+                'MSE': mean_squared_error(y_test, y_pred),
+                'RMSE': np.sqrt(mean_squared_error(y_test, y_pred)),
+                'MAE': mean_absolute_error(y_test, y_pred)
+            }, y_pred
+
+# ==================== INTERFACE PRINCIPALE ====================
 
 def main():
-    # Initialisation des états de session
-    if 'step' not in st.session_state:
-        st.session_state.step = 1
-    if 'problem_type' not in st.session_state:
-        st.session_state.problem_type = ''
+    # Header avec style noir
+    st.markdown("""
+        <h1 style='text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea, #764ba2); 
+                   -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold;'>
+            🤖 Teachable Machine - Dark Mode
+        </h1>
+        <p style='text-align: center; color: #CCCCCC; font-size: 18px;'>
+            Entraînez vos modèles de Machine Learning avec des données tabulaires ou des images
+        </p>
+        <hr style='border: 1px solid #333; margin: 20px 0;'>
+    """, unsafe_allow_html=True)
+    
+    # Initialisation des sessions
     if 'data_loaded' not in st.session_state:
         st.session_state.data_loaded = False
-    if 'target_column' not in st.session_state:
-        st.session_state.target_column = ''
-    if 'trained_models' not in st.session_state:
-        st.session_state.trained_models = {}
-    if 'selected_model' not in st.session_state:
-        st.session_state.selected_model = ''
-    if 'uploaded_data' not in st.session_state:
-        st.session_state.uploaded_data = None
+    if 'trained' not in st.session_state:
+        st.session_state.trained = False
     if 'data_type' not in st.session_state:
         st.session_state.data_type = None
-    if 'camera_capture' not in st.session_state:
-        st.session_state.camera_capture = None
-
-    # Algorithmes disponibles
-    algorithms = {
-        'classification': {
-            'Linear Models': ['Logistic Regression', 'SGD Classifier', 'Perceptron'],
-            'Tree Based': ['Decision Tree', 'Random Forest', 'Extra Trees', 'Gradient Boosting', 'AdaBoost', 'XGBoost', 'LightGBM'],
-            'SVM': ['SVC (Linear)', 'SVC (RBF)', 'SVC (Poly)', 'Nu-SVC'],
-            'Naive Bayes': ['Gaussian NB', 'Multinomial NB', 'Bernoulli NB'],
-            'Neighbors': ['KNN', 'Radius Neighbors'],
-            'Neural Networks': ['MLP Classifier', 'Simple NN', 'Deep NN', 'CNN (Images)']
-        },
-        'regression': {
-            'Linear Models': ['Linear Regression', 'Ridge', 'Lasso', 'Elastic Net', 'SGD Regressor'],
-            'Tree Based': ['Decision Tree', 'Random Forest', 'Extra Trees', 'Gradient Boosting', 'AdaBoost', 'XGBoost', 'LightGBM'],
-            'SVM': ['SVR (Linear)', 'SVR (RBF)', 'SVR (Poly)'],
-            'Neighbors': ['KNN Regressor', 'Radius Neighbors'],
-            'Neural Networks': ['MLP Regressor', 'Simple NN', 'Deep NN']
-        }
-    }
-
-    # Données de démonstration
-    demo_data = {
-        'classification': pd.DataFrame({
-            'feature1': [5.1, 4.9, 7.0, 6.4, 6.3],
-            'feature2': [3.5, 3.0, 3.2, 3.2, 3.3],
-            'feature3': [1.4, 1.4, 4.7, 4.5, 6.0],
-            'target': ['Class A', 'Class A', 'Class B', 'Class B', 'Class C']
-        }),
-        'regression': pd.DataFrame({
-            'feature1': [1.0, 2.0, 3.0, 4.0, 5.0],
-            'feature2': [2.0, 3.0, 4.0, 5.0, 6.0],
-            'feature3': [3.0, 4.0, 5.0, 6.0, 7.0],
-            'target': [10.5, 15.2, 20.1, 25.8, 30.3]
-        })
-    }
-
-    # Sidebar
+    
+    # Sidebar avec style noir
     with st.sidebar:
         st.markdown("""
-            <div style='text-align: center; margin-bottom: 2rem;'>
-                <h1 style='color: #3B82F6;'>🧠</h1>
-                <h2 style='color: #FAFAFA;'>Teachable Machine</h2>
-                <p style='color: #9CA3AF;'>Dark Mode</p>
+            <div style='text-align: center; padding: 10px;'>
+                <img src='https://cdn-icons-png.flaticon.com/512/8637/8637099.png' width='80' style='filter: invert(1);'>
             </div>
+            <h3 style='text-align: center; color: #FFFFFF;'>📊 Navigation</h3>
+            <hr style='border: 1px solid #333; margin: 10px 0;'>
         """, unsafe_allow_html=True)
         
-        st.markdown("*Entraîner vos modèles de Machine Learning avec des données tabulaires ou des images*")
+        step = st.radio(
+            "Étapes:",
+            ["1️⃣ Upload Data", "2️⃣ Configuration", "3️⃣ Entraînement", "4️⃣ Résultats"],
+            label_visibility="collapsed"
+        )
+    
+    # ==================== ÉTAPE 1: UPLOAD DATA ====================
+    if step == "1️⃣ Upload Data":
+        st.header("📁 Upload vos données")
         
-        # Modules dans la sidebar
-        st.markdown("### Modules")
+        # Sélection du type de données
+        data_type = st.radio(
+            "📊 Type de données:",
+            ["📈 Données Tabulaire (CSV/Excel)", "🖼 Images"],
+            horizontal=True
+        )
         
-        module_steps = [
-            {"icon": "📁", "label": "Upload Data", "step": 1},
-            {"icon": "⚙️", "label": "Configuration", "step": 2},
-            {"icon": "🚀", "label": "Entraînement", "step": 3},
-            {"icon": "📊", "label": "Résultats", "step": 4}
-        ]
+        st.session_state.data_type = data_type
         
-        for module in module_steps:
-            is_active = st.session_state.step == module["step"]
-            bg_color = "#374151" if is_active else "#1F2937"
-            text_color = "#3B82F6" if is_active else "#9CA3AF"
-            
-            st.markdown(f"""
-                <div class="module-card" style="background-color: {bg_color};">
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="font-size: 1.2rem;">{module['icon']}</span>
-                        <span style="color: {text_color}; font-weight: {'bold' if is_active else 'normal'};">{module['label']}</span>
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-        
-        # Section d'erreur
-        if len(st.session_state.trained_models) == 0 and st.session_state.step >= 3:
-            st.markdown("""
-                <div class="error-card">
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="font-size: 1.2rem;">⚠️</span>
-                        <span><strong>Error</strong></span>
-                    </div>
-                    <p style="margin: 0.5rem 0 0 0; color: #FCA5A5;">Entraîner d'abord un modèle</p>
-                </div>
-            """, unsafe_allow_html=True)
-        
-        # Section démo
-        st.markdown("### Tester avec données exemple")
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Classification", key="demo_class_btn", use_container_width=True):
-                st.session_state.problem_type = 'classification'
-                st.session_state.data_preview = demo_data['classification']
-                st.session_state.columns = demo_data['classification'].columns.tolist()
-                st.session_state.target_column = 'target'
-                st.session_state.data_loaded = True
-                st.session_state.uploaded_data = demo_data['classification']
-                st.session_state.data_type = 'demo_tabular'
-                st.session_state.step = 2
-                st.rerun()
-        with col2:
-            if st.button("Régression", key="demo_reg_btn", use_container_width=True):
-                st.session_state.problem_type = 'regression'
-                st.session_state.data_preview = demo_data['regression']
-                st.session_state.columns = demo_data['regression'].columns.tolist()
-                st.session_state.target_column = 'target'
-                st.session_state.data_loaded = True
-                st.session_state.uploaded_data = demo_data['regression']
-                st.session_state.data_type = 'demo_tabular'
-                st.session_state.step = 2
-                st.rerun()
-
-    # Contenu principal
-    st.markdown("""
-        <div class="header-section">
-            <h1 style="color: white; margin: 0;">Teachable Machine - Dark Mode</h1>
-            <p style="color: #E5E7EB; margin: 0.5rem 0 0 0;">Entraîner vos modèles de Machine Learning avec des données tabulaires ou des images</p>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # Étape 1: Upload des données
-    if st.session_state.step == 1:
-        st.markdown("## 📁 Upload des Données")
-        
-        tab1, tab2, tab3 = st.tabs(["📊 Données Tabulaires", "🖼️ Images", "📷 Caméra"])
-        
-        with tab1:
-            st.markdown("### Données CSV/Excel")
+        if "Tabulaire" in data_type:
             uploaded_file = st.file_uploader(
-                "Choisir un fichier CSV ou Excel",
+                "Choisissez un fichier CSV ou Excel",
                 type=['csv', 'xlsx', 'xls'],
-                key="csv_uploader"
+                help="Formats supportés: CSV, Excel"
             )
             
-            if uploaded_file is not None:
-                try:
-                    if uploaded_file.name.endswith('.csv'):
-                        df = pd.read_csv(uploaded_file)
-                    else:
-                        df = pd.read_excel(uploaded_file)
-
-                    st.session_state.uploaded_data = df
-                    st.session_state.data_type = 'tabular'
-
-                    st.markdown(f"""
-                        <div class="success-message">
-                            ✅ Fichier uploadé avec succès! Dimensions: {df.shape}
-                        </div>
-                    """, unsafe_allow_html=True)
-
+            if uploaded_file:
+                processor = DataProcessor()
+                df, error = processor.load_data(uploaded_file)
+                
+                if error:
+                    st.error(f"❌ Erreur: {error}")
+                else:
+                    st.success("✅ Données tabulaires chargées avec succès!")
+                    st.session_state.df = df
+                    st.session_state.data_loaded = True
+                    st.session_state.processor = processor
+                    
                     # Aperçu des données
-                    st.markdown("#### Aperçu des données")
-                    st.dataframe(df.head(), use_container_width=True)
-
-                    col1, col2 = st.columns(2)
+                    col1, col2, col3 = st.columns(3)
                     with col1:
-                        target_col = st.selectbox(
-                            "Colonne cible:",
-                            options=df.columns.tolist(),
-                            key="target_select_tabular"
-                        )
-                        st.session_state.target_column = target_col
-
+                        st.metric("📊 Lignes", df.shape[0])
                     with col2:
-                        problem_type = st.radio(
-                            "Type de problème:",
-                            options=['classification', 'regression'],
-                            format_func=lambda x: "Classification" if x == 'classification' else "Régression",
-                            horizontal=True,
-                            key="problem_type_tabular"
-                        )
-                        st.session_state.problem_type = problem_type
-
-                    if st.button("Traiter les Données →", key="process_data_btn", type="primary", use_container_width=True):
-                        st.session_state.data_preview = df
-                        st.session_state.columns = df.columns.tolist()
-                        st.session_state.data_loaded = True
-                        st.session_state.step = 2
-                        st.rerun()
-
-                except Exception as e:
-                    st.error(f"Erreur de lecture: {str(e)}")
-
-        with tab2:
-            st.markdown("### Dataset d'Images")
-            uploaded_images = st.file_uploader(
-                "Choisir des images",
-                type=['jpg', 'jpeg', 'png', 'bmp', 'tiff'],
-                accept_multiple_files=True,
-                key="image_uploader"
-            )
-
-            if uploaded_images:
-                st.markdown(f"""
-                    <div class="success-message">
-                        ✅ {len(uploaded_images)} images uploadées avec succès!
-                    </div>
-                """, unsafe_allow_html=True)
-
-                # Aperçu des images
-                st.markdown("#### Aperçu des images")
-                cols = st.columns(4)
-                for idx, img_file in enumerate(uploaded_images[:4]):
-                    with cols[idx % 4]:
-                        image = Image.open(img_file)
-                        st.image(image, use_column_width=True, caption=f"Image {idx + 1}")
-
-                if st.button("Traiter les Images →", key="process_images_btn", type="primary", use_container_width=True):
-                    with st.spinner("Traitement des images..."):
-                        time.sleep(2)
-                        sample_data = pd.DataFrame({
-                            'image_name': [img.name for img in uploaded_images[:5]],
-                            'target': ['Class A', 'Class B', 'Class A', 'Class C', 'Class B']
-                        })
-                        st.session_state.uploaded_data = uploaded_images
-                        st.session_state.data_type = 'images'
-                        st.session_state.data_preview = sample_data
-                        st.session_state.problem_type = 'classification'
-                        st.session_state.data_loaded = True
-                        st.session_state.step = 2
-                        st.rerun()
-
-        with tab3:
-            st.markdown("### Capture Caméra")
-            st.markdown("""
-                <div class="info-message">
-                    💡 Fonctionnalité caméra - Utilisez des images existantes ou simulez une capture
-                </div>
-            """, unsafe_allow_html=True)
+                        st.metric("📋 Colonnes", df.shape[1])
+                    with col3:
+                        st.metric("🔢 Types", df.select_dtypes(include=[np.number]).shape[1])
+                    
+                    st.subheader("📋 Aperçu des données")
+                    st.dataframe(df.head(10), use_container_width=True)
+                    
+                    st.subheader("📊 Informations")
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.write("*Types de colonnes:*")
+                        st.dataframe(df.dtypes.to_frame('Type'), use_container_width=True)
+                    
+                    with col2:
+                        st.write("*Valeurs manquantes:*")
+                        missing = df.isnull().sum()
+                        st.dataframe(missing.to_frame('Missing'), use_container_width=True)
+        
+        else:  # Images
+            st.subheader("🖼 Upload d'Images")
             
-            camera_images = st.file_uploader(
-                "Uploader des images de caméra",
-                type=['jpg', 'jpeg', 'png'],
-                accept_multiple_files=True,
-                key="camera_uploader"
+            upload_option = st.radio(
+                "Méthode d'upload:",
+                ["📁 Fichiers multiples", "🗜 Archive ZIP"],
+                horizontal=True
             )
             
-            if st.button("📸 Simuler Capture Caméra", key="simulate_camera_btn", use_container_width=True):
-                simulated_images = []
-                for i in range(4):
-                    img_array = np.random.randint(0, 255, (100, 100, 3), dtype=np.uint8)
-                    img = Image.fromarray(img_array)
-                    simulated_images.append(img)
-                st.session_state.camera_capture = simulated_images
-                st.success("✅ 4 images simulées capturées!")
+            if upload_option == "📁 Fichiers multiples":
+                uploaded_files = st.file_uploader(
+                    "Choisissez vos images",
+                    type=['png', 'jpg', 'jpeg', 'bmp', 'tiff'],
+                    accept_multiple_files=True,
+                    help="Formats supportés: PNG, JPG, JPEG, BMP, TIFF"
+                )
                 
-                cols = st.columns(4)
-                for idx, img in enumerate(simulated_images):
-                    with cols[idx]:
-                        st.image(img, use_column_width=True, caption=f"Capture {idx + 1}")
-
-            if camera_images or st.session_state.camera_capture:
-                images_to_use = camera_images if camera_images else st.session_state.camera_capture
-                if st.button("Utiliser Images Capturées →", key="use_camera_btn", type="primary", use_container_width=True):
-                    with st.spinner("Traitement des images capturées..."):
-                        time.sleep(2)
-                        if camera_images:
-                            sample_data = pd.DataFrame({
-                                'image_name': [img.name for img in camera_images[:5]],
-                                'source': ['camera'] * min(5, len(camera_images)),
-                                'target': ['Class A', 'Class B', 'Class A', 'Class A', 'Class B']
-                            })
-                        else:
-                            sample_data = pd.DataFrame({
-                                'image_name': [f"capture_{i + 1}.jpg" for i in range(4)],
-                                'source': ['camera'] * 4,
-                                'target': ['Class A', 'Class B', 'Class A', 'Class B']
-                            })
-                        st.session_state.uploaded_data = images_to_use
-                        st.session_state.data_type = 'camera'
-                        st.session_state.data_preview = sample_data
-                        st.session_state.problem_type = 'classification'
-                        st.session_state.data_loaded = True
-                        st.session_state.step = 2
-                        st.rerun()
-
-    # Étape 2: Configuration
-    elif st.session_state.step == 2 and st.session_state.problem_type:
-        st.markdown("## ⚙️ Configuration")
+                if uploaded_files:
+                    st.success(f"✅ {len(uploaded_files)} images chargées!")
+                    
+                    # Afficher un aperçu des images
+                    st.subheader("👀 Aperçu des images")
+                    cols = st.columns(4)
+                    for idx, uploaded_file in enumerate(uploaded_files[:8]):
+                        with cols[idx % 4]:
+                            img = Image.open(uploaded_file)
+                            st.image(img, caption=uploaded_file.name, width=150)
+                    
+                    st.session_state.uploaded_files = uploaded_files
+                    st.session_state.data_loaded = True
+                    st.session_state.image_processor = ImageProcessor()
+            
+            else:  # Archive ZIP
+                zip_file = st.file_uploader(
+                    "Choisissez une archive ZIP contenant vos images",
+                    type=['zip'],
+                    help="Archive ZIP avec des dossiers organisés par classe"
+                )
+                
+                if zip_file:
+                    st.success("✅ Archive ZIP chargée!")
+                    st.session_state.zip_file = zip_file
+                    st.session_state.data_loaded = True
+                    st.session_state.image_processor = ImageProcessor()
+    
+    # ==================== ÉTAPE 2: CONFIGURATION ====================
+    elif step == "2️⃣ Configuration":
+        if not st.session_state.data_loaded:
+            st.warning("⚠ Veuillez d'abord charger des données!")
+            return
         
-        # Aperçu du dataset
-        st.markdown("### Aperçu du Dataset")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Type de données", st.session_state.data_type)
-        with col2:
-            if hasattr(st.session_state, 'uploaded_data'):
-                if st.session_state.data_type in ['tabular', 'demo_tabular']:
-                    st.metric("Lignes", len(st.session_state.uploaded_data))
-                elif st.session_state.data_type in ['images', 'camera']:
-                    st.metric("Images", len(st.session_state.uploaded_data))
-        with col3:
-            st.metric("Type de problème", st.session_state.problem_type)
+        st.header("⚙ Configuration du modèle")
         
-        if st.session_state.data_type in ['tabular', 'demo_tabular']:
-            st.markdown("#### Aperçu des données")
-            st.dataframe(st.session_state.data_preview, use_container_width=True)
+        # Configuration différente selon le type de données
+        if "Tabulaire" in st.session_state.data_type:
+            df = st.session_state.df
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.subheader("🎯 Type de problème")
+                problem_type = st.radio(
+                    "Sélectionnez:",
+                    ["Classification", "Régression"],
+                    horizontal=True
+                )
+                st.session_state.problem_type = problem_type.lower()
+            
+            with col2:
+                st.subheader("🧠 Type de modèle")
+                model_type = st.radio(
+                    "Sélectionnez:",
+                    ["ML Classique", "Deep Learning"],
+                    horizontal=True
+                )
+                st.session_state.model_type = model_type
+            
+            st.subheader("🎯 Variable cible")
+            target_col = st.selectbox("Sélectionnez la colonne cible:", df.columns)
+            st.session_state.target_col = target_col
+            
+        else:  # Images
+            st.subheader("🎯 Configuration pour les Images")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.subheader("📊 Type de problème")
+                problem_type = st.radio(
+                    "Sélectionnez:",
+                    ["Classification"],
+                    horizontal=True
+                )
+                st.session_state.problem_type = "classification"
+                
+                st.subheader("🧠 Type de modèle")
+                model_type = st.radio(
+                    "Sélectionnez:",
+                    ["Deep Learning"],
+                    horizontal=True
+                )
+                st.session_state.model_type = "Deep Learning"
+            
+            with col2:
+                st.subheader("🖼 Paramètres des images")
+                img_size = st.selectbox(
+                    "Taille des images:",
+                    [(64, 64), (128, 128), (224, 224)],
+                    format_func=lambda x: f"{x[0]}x{x[1]}"
+                )
+                st.session_state.img_size = img_size
         
-        # Navigation
+        st.subheader("✂ Split des données")
         col1, col2 = st.columns([3, 1])
+        with col1:
+            test_size = st.slider(
+                "Taille du test set (%)",
+                min_value=10,
+                max_value=40,
+                value=20,
+                step=5
+            )
         with col2:
-            if st.button("Commencer l'Entraînement →", key="start_training_btn", type="primary", use_container_width=True):
-                st.session_state.step = 3
-                st.rerun()
-            if st.button("← Changer les Données", key="change_data_btn", use_container_width=True):
-                st.session_state.step = 1
-                st.rerun()
-
-    # Étape 3: Entraînement
-    elif st.session_state.step == 3:
-        st.markdown("## 🚀 Entraînement des Modèles")
+            st.metric("Train", f"{100-test_size}%")
+            st.metric("Test", f"{test_size}%")
         
-        if st.session_state.problem_type:
-            algo_to_use = algorithms[st.session_state.problem_type]
+        st.session_state.test_size = test_size / 100
+        
+        if st.button("✅ Valider la configuration", type="primary"):
+            st.success("✅ Configuration enregistrée! Passez à l'entraînement.")
+    
+    # ==================== ÉTAPE 3: ENTRAÎNEMENT ====================
+    elif step == "3️⃣ Entraînement":
+        if not st.session_state.data_loaded:
+            st.warning("⚠ Veuillez d'abord charger des données!")
+            return
+        
+        if 'target_col' not in st.session_state and "Tabulaire" in st.session_state.data_type:
+            st.warning("⚠ Veuillez d'abord configurer votre modèle!")
+            return
+        
+        st.header("🚀 Entraînement du modèle")
+        
+        # Préparation des données selon le type
+        if "Tabulaire" in st.session_state.data_type:
+            # Données tabulaires
+            if 'X_train' not in st.session_state:
+                with st.spinner("🔄 Préparation des données tabulaires..."):
+                    processor = st.session_state.processor
+                    X_train, X_test, y_train, y_test, feature_names = processor.preprocess_data(
+                        st.session_state.df,
+                        st.session_state.target_col,
+                        st.session_state.test_size
+                    )
+                    st.session_state.X_train = X_train
+                    st.session_state.X_test = X_test
+                    st.session_state.y_train = y_train
+                    st.session_state.y_test = y_test
+                    st.session_state.feature_names = feature_names
+                st.success("✅ Données préparées!")
             
-            for category, models in algo_to_use.items():
-                st.markdown(f"### {category}")
+            # ML CLASSIQUE
+            if st.session_state.model_type == "ML Classique":
+                st.subheader("🤖 Algorithmes ML Classiques")
                 
-                cols = st.columns(3)
-                for idx, model in enumerate(models):
-                    col_idx = idx % 3
-                    with cols[col_idx]:
-                        with st.container():
-                            st.markdown(f"{model}")
-                            
-                            if model in st.session_state.trained_models:
-                                status = st.session_state.trained_models[model]['status']
-                                if status == 'training':
-                                    st.button("⏳ Entraînement...", key=f"training_{model}_{idx}", disabled=True)
-                                else:
-                                    if st.button("🔄 Réentraîner", key=f"retrain_{model}_{idx}"):
-                                        train_model(model, st.session_state.problem_type, st.session_state.data_type)
-                            else:
-                                if st.button("🚀 Entraîner", key=f"train_{model}_{idx}"):
-                                    train_model(model, st.session_state.problem_type, st.session_state.data_type)
-            
-            if st.button("Voir les Résultats →", key="view_results_btn", type="primary", disabled=len(st.session_state.trained_models) == 0):
-                st.session_state.step = 4
-                st.rerun()
-
-   # Étape 4: Résultats (CORRECTION COMPLÈTE)
-    elif st.session_state.step == 4:
-        st.markdown("## 📊 Résultats")
-        
-        if st.button("← Retour à l'Entraînement", key="back_to_training_btn"):
-            st.session_state.step = 3
-            st.rerun()
-        
-        trained_models_list = [name for name, model in st.session_state.trained_models.items()
-                               if model.get('status') == 'trained']
-        
-        if trained_models_list:
-            # Comparaison des modèles
-            st.markdown("### Comparaison des Performances")
-            
-            comparison_data = []
-            for model_name in trained_models_list:
-                try:
-                    model_data = st.session_state.trained_models[model_name]
-                    
-                    # Vérifier que metrics existe
-                    if 'metrics' not in model_data:
-                        continue
-                    
-                    metrics = model_data['metrics']
-                    
-                    if st.session_state.problem_type == 'classification':
-                        # Gestion flexible pour CNN et ML classique
-                        if 'accuracy' in metrics:
-                            score = float(metrics['accuracy']) * 100
-                        elif 'val_accuracy' in metrics:
-                            score = float(metrics['val_accuracy']) * 100
+                trainer = ClassicalMLTrainer(st.session_state.problem_type)
+                available_models = list(trainer.get_models().keys())
+                
+                selected_models = st.multiselect(
+                    "Sélectionnez les algorithmes à entraîner:",
+                    available_models,
+                    default=available_models[:3]
+                )
+                
+                if st.button("🚀 Lancer l'entraînement", type="primary"):
+                    if selected_models:
+                        # Reshape pour les modèles classiques si nécessaire
+                        if len(st.session_state.X_train.shape) > 2:
+                            X_train_flat = st.session_state.X_train.reshape(st.session_state.X_train.shape[0], -1)
+                            X_test_flat = st.session_state.X_test.reshape(st.session_state.X_test.shape[0], -1)
                         else:
-                            score = 85.0
+                            X_train_flat = st.session_state.X_train
+                            X_test_flat = st.session_state.X_test
+                        
+                        results = trainer.train_models(
+                            X_train_flat,
+                            X_test_flat,
+                            st.session_state.y_train,
+                            st.session_state.y_test,
+                            selected_models
+                        )
+                        st.session_state.ml_results = results
+                        st.session_state.ml_trainer = trainer
+                        st.session_state.trained = True
+                        st.success("✅ Entraînement terminé!")
+                        st.balloons()
                     else:
-                        if 'r2Score' in metrics:
-                            score = float(metrics['r2Score']) * 100
-                        else:
-                            score = 85.0
-                    
-                    comparison_data.append({
-                        'Modèle': model_name,
-                        'Score': round(score, 2),
-                        'Temps d\'entraînement': float(metrics.get('trainTime', 0))
-                    })
-                    
-                except Exception as e:
-                    st.warning(f"⚠️ Erreur pour {model_name}: {str(e)}")
-                    continue
+                        st.warning("⚠ Veuillez sélectionner au moins un algorithme!")
             
-            # Vérifier qu'on a des données
-            if len(comparison_data) == 0:
-                st.error("❌ Aucun modèle avec des métriques valides trouvé. Veuillez ré-entraîner les modèles.")
+            # DEEP LEARNING pour données tabulaires
             else:
-                df_comparison = pd.DataFrame(comparison_data)
+                st.subheader("🧠 Deep Learning pour données tabulaires")
                 
-                # Graphique de comparaison
-                fig = px.bar(
-                    df_comparison, 
-                    x='Modèle', 
-                    y='Score',
-                    title="Comparaison des Performances",
-                    color='Score', 
-                    color_continuous_scale='Viridis',
-                    text='Score'
-                )
+                col1, col2 = st.columns(2)
                 
-                fig.update_traces(texttemplate='%{text:.2f}%', textposition='outside')
+                with col1:
+                    architecture = st.radio(
+                        "Architecture:",
+                        ["default", "custom"]
+                    )
                 
-                fig.update_layout(
-                    plot_bgcolor='#0E1117',
-                    paper_bgcolor='#0E1117',
-                    font_color='#FAFAFA',
-                    xaxis_title="Modèles",
-                    yaxis_title="Score (%)",
-                    height=500
-                )
+                custom_params = {}
+                if architecture == "custom":
+                    with col2:
+                        st.write("*Paramètres personnalisés:*")
+                        custom_params['n_layers'] = st.number_input("Nombre de couches", 2, 10, 3)
+                        custom_params['neurons'] = st.number_input("Neurons (1ère couche)", 32, 512, 128)
+                        custom_params['dropout'] = st.slider("Dropout", 0.0, 0.5, 0.3)
                 
-                st.plotly_chart(fig, use_container_width=True)
+                epochs = st.slider("Epochs", 10, 200, 100)
+                batch_size = st.selectbox("Batch size", [16, 32, 64, 128], index=1)
                 
-                # Afficher le tableau de comparaison
-                st.markdown("#### 📋 Tableau Récapitulatif")
-                st.dataframe(
-                    df_comparison.style.background_gradient(subset=['Score'], cmap='Greens'),
-                    use_container_width=True,
-                    hide_index=True
-                )
-                
-                # Métriques détaillées pour chaque modèle
-                st.markdown("### 📊 Détails des Modèles")
-                
-                for model_name in trained_models_list:
-                    try:
-                        model_data = st.session_state.trained_models[model_name]
+                if st.button("🚀 Lancer l'entraînement DL", type="primary"):
+                    with st.spinner("🔄 Entraînement en cours..."):
+                        dl_trainer = DeepLearningTrainer(st.session_state.problem_type)
                         
-                        if 'metrics' not in model_data:
-                            continue
+                        input_dim = st.session_state.X_train.shape[1]
+                        output_dim = len(np.unique(st.session_state.y_train)) if st.session_state.problem_type == 'classification' else 1
                         
-                        has_architecture = 'architecture' in model_data
+                        model = dl_trainer.build_model(input_dim, output_dim, architecture, custom_params)
                         
-                        with st.expander(f"📊 {model_name} - Temps: {model_data['metrics'].get('trainTime', 'N/A')}s"):
-                            # Métriques
-                            st.markdown("#### 📈 Métriques de Performance")
-                            metrics_cols = st.columns(4)
-                            
-                            col_counter = 0
-                            for key, value in model_data['metrics'].items():
-                                if key != 'trainTime':
-                                    col_idx = col_counter % 4
-                                    with metrics_cols[col_idx]:
-                                        st.markdown(f"""
-                                            <div class="metric-card">
-                                                <div style="font-size: 0.8rem; color: #9CA3AF;">
-                                                    {key.replace('_', ' ').title()}
-                                                </div>
-                                                <div style="font-size: 1.5rem; font-weight: bold; color: #3B82F6;">
-                                                    {value}
-                                                </div>
-                                            </div>
-                                        """, unsafe_allow_html=True)
-                            # ARCHITECTURE CNN (tout le code d'affichage CNN ici)
-                            if has_architecture:
-                                st.markdown("---")
-                                st.markdown("### 🏗️ Architecture du Modèle CNN")
-                                
-                                arch = model_data['architecture']
-                                
-                                # Résumé des paramètres
-                                st.markdown("""
-                                    <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                                                padding: 1.5rem; border-radius: 1rem; margin: 1rem 0;'>
-                                        <h4 style='color: white; margin: 0 0 1rem 0;'>📊 Résumé des Paramètres</h4>
-                                    </div>
-                                """, unsafe_allow_html=True)
-                                
-                                col1, col2, col3 = st.columns(3)
-                                with col1:
-                                    st.markdown(f"""
-                                        <div class="metric-card" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);">
-                                            <div style="font-size: 0.9rem; color: #dbeafe;">Total Paramètres</div>
-                                            <div style="font-size: 2rem; font-weight: bold; color: white;">
-                                                {arch['total_params']:,}
-                                            </div>
-                                        </div>
-                                    """, unsafe_allow_html=True)
-                                with col2:
-                                    st.markdown(f"""
-                                        <div class="metric-card" style="background: linear-gradient(135deg, #065f46 0%, #10b981 100%);">
-                                            <div style="font-size: 0.9rem; color: #d1fae5;">Entraînables</div>
-                                            <div style="font-size: 2rem; font-weight: bold; color: white;">
-                                                {arch['trainable_params']:,}
-                                            </div>
-                                        </div>
-                                    """, unsafe_allow_html=True)
-                                with col3:
-                                    st.markdown(f"""
-                                        <div class="metric-card" style="background: linear-gradient(135deg, #7c2d12 0%, #f97316 100%);">
-                                            <div style="font-size: 0.9rem; color: #fed7aa;">Non-Entraînables</div>
-                                            <div style="font-size: 2rem; font-weight: bold; color: white;">
-                                                {arch['non_trainable_params']:,}
-                                            </div>
-                                        </div>
-                                    """, unsafe_allow_html=True)
-                                
-                                st.markdown("<br>", unsafe_allow_html=True)
-                                
-                                # Tableau des couches
-                                st.markdown("#### 🔍 Détail des Couches")
-                                layers_data = []
-                                for idx, layer in enumerate(arch['layers'], 1):
-                                    layers_data.append({
-                                        'N°': idx,
-                                        'Type de Couche': layer['type'],
-                                        'Output Shape': layer['output_shape'],
-                                        'Paramètres': f"{layer['params']:,}"
-                                    })
-                                
-                                df_layers = pd.DataFrame(layers_data)
-                                st.dataframe(df_layers, use_container_width=True, hide_index=True)
-                                
-                                # Visualisation graphique
-                                st.markdown("#### 📊 Visualisation de l'Architecture")
-                                
-                                col1, col2 = st.columns(2)
-                                
-                                with col1:
-                                    # Graphique des paramètres par couche
-                                    layer_names = [f"{layer['type']}" for layer in arch['layers']]
-                                    layer_params = [layer['params'] for layer in arch['layers']]
-                                    
-                                    non_zero_layers = [(name, params) for name, params in zip(layer_names, layer_params) if params > 0]
-                                    if non_zero_layers:
-                                        names, params = zip(*non_zero_layers)
-                                        
-                                        fig1 = go.Figure(data=[
-                                            go.Bar(
-                                                y=list(names)[::-1],
-                                                x=list(params)[::-1],
-                                                orientation='h',
-                                                marker=dict(
-                                                    color=list(params)[::-1],
-                                                    colorscale='Viridis',
-                                                    showscale=True
-                                                ),
-                                                text=[f"{p:,}" for p in params[::-1]],
-                                                textposition='auto'
-                                            )
-                                        ])
-                                        
-                                        fig1.update_layout(
-                                            title="Paramètres par Couche",
-                                            xaxis_title="Nombre de paramètres",
-                                            height=500,
-                                            plot_bgcolor='#0E1117',
-                                            paper_bgcolor='#0E1117',
-                                            font_color='#FAFAFA'
-                                        )
-                                        
-                                        st.plotly_chart(fig1, use_container_width=True)
-                                
-                                with col2:
-                                    # Diagramme circulaire
-                                    layer_types = {}
-                                    for layer in arch['layers']:
-                                        layer_type = layer['type'].split()[0]
-                                        if layer['params'] > 0:
-                                            layer_types[layer_type] = layer_types.get(layer_type, 0) + layer['params']
-                                    
-                                    if layer_types:
-                                        fig2 = go.Figure(data=[go.Pie(
-                                            labels=list(layer_types.keys()),
-                                            values=list(layer_types.values()),
-                                            hole=0.4,
-                                            textinfo='label+percent'
-                                        )])
-                                        
-                                        fig2.update_layout(
-                                            title="Distribution des Paramètres",
-                                            height=500,
-                                            plot_bgcolor='#0E1117',
-                                            paper_bgcolor='#0E1117',
-                                            font_color='#FAFAFA'
-                                        )
-                                        
-                                        st.plotly_chart(fig2, use_container_width=True)
-                    
-                    except Exception as e:
-                        st.error(f"Erreur lors de l'affichage de {model_name}: {str(e)}")
-                        continue
+                        # Entraînement
+                        progress_bar = st.progress(0)
+                        history = dl_trainer.train(
+                            st.session_state.X_train,
+                            st.session_state.y_train,
+                            st.session_state.X_test,
+                            st.session_state.y_test,
+                            epochs=epochs,
+                            batch_size=batch_size
+                        )
+                        progress_bar.progress(100)
+                        
+                        st.session_state.dl_trainer = dl_trainer
+                        st.session_state.dl_history = history
+                        st.session_state.trained = True
+                        
+                    st.success("✅ Entraînement terminé!")
+                    st.balloons()
         
-        else:
-            st.markdown("""
-                <div class="error-card">
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="font-size: 1.2rem;">⚠️</span>
-                        <span><strong>Aucun modèle entraîné</strong></span>
-                    </div>
-                    <p style="margin: 0.5rem 0 0 0; color: #FCA5A5;">Veuillez d'abord entraîner au moins un modèle dans l'onglet Entraînement</p>
-                </div>
-            """, unsafe_allow_html=True)                      
-                        # Si CNN, afficher l'architecture
-                        if has_architecture:
-                            st.markdown("---")
-                            st.markdown("### 🏗️ Architecture du Modèle CNN")
-                            
-                            arch = model_data['architecture']
-                            
-                            # Résumé des paramètres avec style
-                            st.markdown("""
-                                <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                                            padding: 1.5rem; border-radius: 1rem; margin: 1rem 0;'>
-                                    <h4 style='color: white; margin: 0 0 1rem 0;'>📊 Résumé des Paramètres</h4>
-                                </div>
-                            """, unsafe_allow_html=True)
-                            
-                            col1, col2, col3 = st.columns(3)
-                            with col1:
-                                st.markdown(f"""
-                                    <div class="metric-card" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);">
-                                        <div style="font-size: 0.9rem; color: #dbeafe;">Total Paramètres</div>
-                                        <div style="font-size: 2rem; font-weight: bold; color: white;">
-                                            {arch['total_params']:,}
-                                        </div>
-                                    </div>
-                                """, unsafe_allow_html=True)
-                            with col2:
-                                st.markdown(f"""
-                                    <div class="metric-card" style="background: linear-gradient(135deg, #065f46 0%, #10b981 100%);">
-                                        <div style="font-size: 0.9rem; color: #d1fae5;">Entraînables</div>
-                                        <div style="font-size: 2rem; font-weight: bold; color: white;">
-                                            {arch['trainable_params']:,}
-                                        </div>
-                                    </div>
-                                """, unsafe_allow_html=True)
-                            with col3:
-                                st.markdown(f"""
-                                    <div class="metric-card" style="background: linear-gradient(135deg, #7c2d12 0%, #f97316 100%);">
-                                        <div style="font-size: 0.9rem; color: #fed7aa;">Non-Entraînables</div>
-                                        <div style="font-size: 2rem; font-weight: bold; color: white;">
-                                            {arch['non_trainable_params']:,}
-                                        </div>
-                                    </div>
-                                """, unsafe_allow_html=True)
-                            
-                            st.markdown("<br>", unsafe_allow_html=True)
-                            
-                            # Tableau des couches
-                            st.markdown("#### 🔍 Détail des Couches")
-                            layers_data = []
-                            for idx, layer in enumerate(arch['layers'], 1):
-                                layers_data.append({
-                                    'N°': idx,
-                                    'Type de Couche': layer['type'],
-                                    'Output Shape': layer['output_shape'],
-                                    'Paramètres': f"{layer['params']:,}"
-                                })
-                            
-                            df_layers = pd.DataFrame(layers_data)
-                            
-                            # Style du tableau
-                            st.dataframe(
-                                df_layers,
-                                use_container_width=True,
-                                hide_index=True,
-                                column_config={
-                                    "N°": st.column_config.NumberColumn(
-                                        "N°",
-                                        help="Numéro de la couche",
-                                        width="small"
-                                    ),
-                                    "Type de Couche": st.column_config.TextColumn(
-                                        "Type de Couche",
-                                        help="Type de la couche du réseau",
-                                        width="medium"
-                                    ),
-                                    "Output Shape": st.column_config.TextColumn(
-                                        "Output Shape",
-                                        help="Dimension de sortie",
-                                        width="medium"
-                                    ),
-                                    "Paramètres": st.column_config.TextColumn(
-                                        "Paramètres",
-                                        help="Nombre de paramètres",
-                                        width="small"
-                                    )
-                                }
-                            )
-                            
-                            st.markdown("<br>", unsafe_allow_html=True)
-                            
-                            # Visualisation graphique de l'architecture
-                            st.markdown("#### 📊 Visualisation de l'Architecture")
-                            
-                            # Créer deux graphiques côte à côte
-                            col1, col2 = st.columns(2)
-                            
-                            with col1:
-                                # Graphique horizontal des paramètres par couche
-                                layer_names = [f"{layer['type']}" for layer in arch['layers']]
-                                layer_params = [layer['params'] for layer in arch['layers']]
-                                
-                                # Filtrer les couches avec paramètres > 0
-                                non_zero_layers = [(name, params) for name, params in zip(layer_names, layer_params) if params > 0]
-                                if non_zero_layers:
-                                    names, params = zip(*non_zero_layers)
-                                    
-                                    fig1 = go.Figure(data=[
-                                        go.Bar(
-                                            y=list(names)[::-1],
-                                            x=list(params)[::-1],
-                                            orientation='h',
-                                            marker=dict(
-                                                color=list(params)[::-1],
-                                                colorscale='Viridis',
-                                                showscale=True,
-                                                colorbar=dict(title="Paramètres", x=1.15)
-                                            ),
-                                            text=[f"{p:,}" for p in params[::-1]],
-                                            textposition='auto',
-                                            hovertemplate='<b>%{y}</b><br>Paramètres: %{x:,}<extra></extra>'
-                                        )
-                                    ])
-                                    
-                                    fig1.update_layout(
-                                        title="Paramètres par Couche (avec params > 0)",
-                                        xaxis_title="Nombre de paramètres",
-                                        yaxis_title="Couches",
-                                        height=500,
-                                        plot_bgcolor='#0E1117',
-                                        paper_bgcolor='#0E1117',
-                                        font_color='#FAFAFA',
-                                        margin=dict(l=10, r=150, t=50, b=50)
-                                    )
-                                    
-                                    st.plotly_chart(fig1, use_container_width=True)
-                            
-                            with col2:
-                                # Diagramme circulaire de la distribution des paramètres
-                                layer_types = {}
-                                for layer in arch['layers']:
-                                    layer_type = layer['type'].split()[0]  # Prendre le premier mot
-                                    if layer['params'] > 0:
-                                        if layer_type in layer_types:
-                                            layer_types[layer_type] += layer['params']
-                                        else:
-                                            layer_types[layer_type] = layer['params']
-                                
-                                if layer_types:
-                                    fig2 = go.Figure(data=[go.Pie(
-                                        labels=list(layer_types.keys()),
-                                        values=list(layer_types.values()),
-                                        hole=0.4,
-                                        marker=dict(
-                                            colors=['#667eea', '#764ba2', '#f59e0b', '#10b981', '#ef4444']
-                                        ),
-                                        textinfo='label+percent',
-                                        hovertemplate='<b>%{label}</b><br>Paramètres: %{value:,}<br>Pourcentage: %{percent}<extra></extra>'
-                                    )])
-                                    
-                                    fig2.update_layout(
-                                        title="Distribution des Paramètres par Type",
-                                        height=500,
-                                        plot_bgcolor='#0E1117',
-                                        paper_bgcolor='#0E1117',
-                                        font_color='#FAFAFA',
-                                        showlegend=True,
-                                        legend=dict(
-                                            orientation="v",
-                                            yanchor="middle",
-                                            y=0.5,
-                                            xanchor="left",
-                                            x=1.05
-                                        )
-                                    )
-                                    
-                                    st.plotly_chart(fig2, use_container_width=True)
-                            
-                            # Schéma textuel de l'architecture
-                            st.markdown("#### 🗂️ Schéma de l'Architecture")
-                            
-                            schema_text = "```\n"
-                            schema_text += "INPUT\n"
-                            schema_text += "  ↓\n"
-                            
-                            for idx, layer in enumerate(arch['layers']):
-                                schema_text += f"[{layer['type']}] {layer['output_shape']}\n"
-                                if layer['params'] > 0:
-                                    schema_text += f"  → Params: {layer['params']:,}\n"
-                                if idx < len(arch['layers']) - 1:
-                                    schema_text += "  ↓\n"
-                            
-                            schema_text += "  ↓\n"
-                            schema_text += "OUTPUT\n"
-                            schema_text += "```"
-                            
-                            st.markdown(schema_text)
-                            
-                            # Informations supplémentaires
-                            st.markdown("#### ℹ️ Informations Supplémentaires")
-                            
-                            info_col1, info_col2, info_col3 = st.columns(3)
-                            
-                            with info_col1:
-                                total_layers = len(arch['layers'])
-                                st.info(f"**Nombre total de couches**: {total_layers}")
-                            
-                            with info_col2:
-                                conv_layers = sum(1 for layer in arch['layers'] if 'Conv' in layer['type'])
-                                st.info(f"**Couches convolutives**: {conv_layers}")
-                            
-                            with info_col3:
-                                dense_layers = sum(1 for layer in arch['layers'] if 'Dense' in layer['type'])
-                                st.info(f"**Couches denses**: {dense_layers}")
-                            
-                            # Taille estimée du modèle
-                            model_size_mb = (arch['total_params'] * 4) / (1024 * 1024)  # Approximation en MB
-                            st.success(f"**Taille estimée du modèle**: {model_size_mb:.2f} MB (en float32)")
+        else:  # Images
+            st.subheader("🖼 Deep Learning pour Images")
             
-            else:
-                st.error("Aucune donnée de comparaison disponible")
+            # Préparation des images
+            if 'X_train' not in st.session_state:
+                with st.spinner("🔄 Préparation des images..."):
+                    image_processor = st.session_state.image_processor
+                    image_processor.img_size = st.session_state.img_size
+                    
+                    if hasattr(st.session_state, 'uploaded_files'):
+                        images, labels = image_processor.load_images_from_folders(st.session_state.uploaded_files)
+                    else:
+                        images, labels = image_processor.load_images_from_zip(st.session_state.zip_file)
+                    
+                    if len(images) == 0:
+                        st.error("❌ Aucune image valide n'a été trouvée!")
+                        return
+                    
+                    X_train, X_test, y_train, y_test = image_processor.preprocess_images(
+                        images, labels, st.session_state.test_size
+                    )
+                    
+                    st.session_state.X_train = X_train
+                    st.session_state.X_test = X_test
+                    st.session_state.y_train = y_train
+                    st.session_state.y_test = y_test
+                    st.session_state.image_processor = image_processor
+                    st.session_state.labels = labels
+                    
+                    st.success(f"✅ {len(images)} images préparées! Classes: {np.unique(labels)}")
+            
+            # Configuration CNN
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                architecture = st.radio(
+                    "Architecture CNN:",
+                    ["default", "custom"]
+                )
+            
+            custom_params = {}
+            if architecture == "custom":
+                with col2:
+                    st.write("*Paramètres CNN personnalisés:*")
+                    custom_params['n_conv_layers'] = st.number_input("Nombre de couches convolutionnelles", 2, 5, 3)
+                    custom_params['filters'] = st.number_input("Filtres (1ère couche)", 16, 128, 32)
+                    custom_params['dense_neurons'] = st.number_input("Neurons couches denses", 32, 256, 64)
+                    custom_params['dropout'] = st.slider("Dropout", 0.0, 0.7, 0.5)
+            
+            epochs = st.slider("Epochs", 10, 200, 50)
+            batch_size = st.selectbox("Batch size", [16, 32, 64], index=1)
+            
+            if st.button("🚀 Lancer l'entraînement CNN", type="primary"):
+                with st.spinner("🔄 Entraînement CNN en cours..."):
+                    input_shape = st.session_state.X_train.shape[1:]  # (height, width, channels)
+                    dl_trainer = DeepLearningTrainer(
+                        problem_type='classification',
+                        input_shape=input_shape
+                    )
+                    
+                    output_dim = len(np.unique(st.session_state.y_train))
+                    
+                    model = dl_trainer.build_cnn_model(output_dim, architecture, custom_params)
+                    
+                    # Aperçu du modèle
+                    st.subheader("📋 Architecture du modèle CNN")
+                    model_summary = []
+                    model.summary(print_fn=lambda x: model_summary.append(x))
+                    st.text("\n".join(model_summary))
+                    
+                    # Entraînement
+                    progress_bar = st.progress(0)
+                    history = dl_trainer.train(
+                        st.session_state.X_train,
+                        st.session_state.y_train,
+                        st.session_state.X_test,
+                        st.session_state.y_test,
+                        epochs=epochs,
+                        batch_size=batch_size
+                    )
+                    progress_bar.progress(100)
+                    
+                    st.session_state.dl_trainer = dl_trainer
+                    st.session_state.dl_history = history
+                    st.session_state.trained = True
+                    
+                st.success("✅ Entraînement CNN terminé!")
+                st.balloons()
+    
+    # ==================== ÉTAPE 4: RÉSULTATS ====================
+    elif step == "4️⃣ Résultats":
+        if not st.session_state.trained:
+            st.warning("⚠ Veuillez d'abord entraîner un modèle!")
+            return
         
+        st.header("📊 Résultats et Évaluation")
+        
+        # RÉSULTATS ML CLASSIQUE (seulement pour données tabulaires)
+        if st.session_state.model_type == "ML Classique" and "Tabulaire" in st.session_state.data_type:
+            results = st.session_state.ml_results
+            
+            # Tableau comparatif
+            st.subheader("📈 Comparaison des modèles")
+            
+            metrics_df = pd.DataFrame({
+                model: res['metrics']
+                for model, res in results.items()
+            }).T
+            
+            st.dataframe(metrics_df.style.highlight_max(axis=0, color='#667eea'), use_container_width=True)
+            
+            # Meilleur modèle
+            if st.session_state.problem_type == 'classification':
+                best_metric = 'Accuracy'
+            else:
+                best_metric = 'R² Score'
+            
+            best_model = metrics_df[best_metric].idxmax()
+            best_score = metrics_df[best_metric].max()
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("🏆 Meilleur Modèle", best_model)
+            with col2:
+                st.metric(f"📊 {best_metric}", f"{best_score:.4f}")
+            with col3:
+                st.metric("📁 Modèles entraînés", len(results))
+            
+            # Visualisations
+            st.subheader("📊 Visualisations")
+            
+            if st.session_state.problem_type == 'classification':
+                # Matrice de confusion pour le meilleur modèle
+                y_pred = results[best_model]['predictions']
+                cm = confusion_matrix(st.session_state.y_test, y_pred)
+                
+                fig, ax = plt.subplots(figsize=(8, 6))
+                im = ax.imshow(cm, interpolation='nearest', cmap='plasma')
+                ax.figure.colorbar(im, ax=ax)
+                
+                # Ajouter les annotations
+                thresh = cm.max() / 2.
+                for i in range(cm.shape[0]):
+                    for j in range(cm.shape[1]):
+                        ax.text(j, i, format(cm[i, j], 'd'),
+                               ha="center", va="center",
+                               color="white" if cm[i, j] > thresh else "black",
+                               fontweight='bold')
+                
+                ax.set_title(f'Matrice de Confusion - {best_model}', fontweight='bold', pad=20)
+                ax.set_xlabel('Prédictions', fontweight='bold')
+                ax.set_ylabel('Vraies valeurs', fontweight='bold')
+                ax.set_xticks(range(len(cm)))
+                ax.set_yticks(range(len(cm)))
+                st.pyplot(fig)
+            
+            else:  # regression
+                # Prédictions vs Réelles
+                y_pred = results[best_model]['predictions']
+                
+                fig, ax = plt.subplots(figsize=(10, 6))
+                scatter = ax.scatter(st.session_state.y_test, y_pred, alpha=0.6, c='#667eea', s=50)
+                ax.plot([st.session_state.y_test.min(), st.session_state.y_test.max()],
+                       [st.session_state.y_test.min(), st.session_state.y_test.max()],
+                       'r--', lw=2, alpha=0.8)
+                ax.set_xlabel('Valeurs réelles', fontweight='bold')
+                ax.set_ylabel('Prédictions', fontweight='bold')
+                ax.set_title(f'Prédictions vs Réelles - {best_model}', fontweight='bold', pad=20)
+                ax.grid(True, alpha=0.3)
+                st.pyplot(fig)
+            
+            # Téléchargement du modèle
+            st.subheader("💾 Télécharger le modèle")
+            model_to_download = st.selectbox("Sélectionnez un modèle:", list(results.keys()))
+            
+            if st.button("📥 Télécharger"):
+                model = st.session_state.ml_trainer.models[model_to_download]
+                buffer = BytesIO()
+                pickle.dump(model, buffer)
+                buffer.seek(0)
+                
+                st.download_button(
+                    label="💾 Télécharger le modèle",
+                    data=buffer,
+                    file_name=f"{model_to_download.replace(' ', '_')}_model.pkl",
+                    mime="application/octet-stream"
+                )
+        
+        # RÉSULTATS DEEP LEARNING (pour données tabulaires et images)
         else:
-            st.markdown("""
-                <div class="error-card">
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="font-size: 1.2rem;">⚠️</span>
-                        <span><strong>Aucun modèle entraîné</strong></span>
-                    </div>
-                    <p style="margin: 0.5rem 0 0 0; color: #FCA5A5;">Veuillez d'abord entraîner au moins un modèle dans l'onglet Entraînement</p>
-                </div>
-            """, unsafe_allow_html=True)
+            dl_trainer = st.session_state.dl_trainer
+            history = st.session_state.dl_history.history
+            
+            # Métriques
+            metrics, predictions = dl_trainer.evaluate(
+                st.session_state.X_test,
+                st.session_state.y_test
+            )
+            
+            st.subheader("📊 Métriques du modèle")
+            cols = st.columns(len(metrics))
+            for idx, (metric, value) in enumerate(metrics.items()):
+                with cols[idx]:
+                    st.metric(metric, f"{value:.4f}")
+            
+            # Courbes d'apprentissage
+            st.subheader("📈 Courbes d'apprentissage")
+            
+            fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+            
+            # Loss
+            axes[0].plot(history['loss'], label='Train Loss', linewidth=2, color='#667eea')
+            axes[0].plot(history['val_loss'], label='Val Loss', linewidth=2, color='#764ba2')
+            axes[0].set_title('Loss durant l\'entraînement', fontweight='bold')
+            axes[0].set_xlabel('Epoch')
+            axes[0].set_ylabel('Loss')
+            axes[0].legend()
+            axes[0].grid(True, alpha=0.3)
+            
+            # Métrique principale
+            metric_key = 'accuracy' if st.session_state.problem_type == 'classification' else 'mae'
+            if metric_key in history:
+                axes[1].plot(history[metric_key], label=f'Train {metric_key}', linewidth=2, color='#667eea')
+                axes[1].plot(history[f'val_{metric_key}'], label=f'Val {metric_key}', linewidth=2, color='#764ba2')
+                axes[1].set_title(f'{metric_key.upper()} durant l\'entraînement', fontweight='bold')
+                axes[1].set_xlabel('Epoch')
+                axes[1].set_ylabel(metric_key.upper())
+                axes[1].legend()
+                axes[1].grid(True, alpha=0.3)
+            
+            plt.tight_layout()
+            st.pyplot(fig)
+            
+            # Matrice de confusion pour la classification
+            if st.session_state.problem_type == 'classification':
+                st.subheader("🎯 Matrice de Confusion")
+                y_pred_classes = np.argmax(dl_trainer.model.predict(st.session_state.X_test), axis=1)
+                cm = confusion_matrix(st.session_state.y_test, y_pred_classes)
+                
+                fig, ax = plt.subplots(figsize=(8, 6))
+                im = ax.imshow(cm, interpolation='nearest', cmap='plasma')
+                ax.figure.colorbar(im, ax=ax)
+                
+                thresh = cm.max() / 2.
+                for i in range(cm.shape[0]):
+                    for j in range(cm.shape[1]):
+                        ax.text(j, i, format(cm[i, j], 'd'),
+                               ha="center", va="center",
+                               color="white" if cm[i, j] > thresh else "black",
+                               fontweight='bold')
+                
+                ax.set_title('Matrice de Confusion', fontweight='bold', pad=20)
+                ax.set_xlabel('Prédictions', fontweight='bold')
+                ax.set_ylabel('Vraies valeurs', fontweight='bold')
+                st.pyplot(fig)
+            
+            # Téléchargement du modèle
+            st.subheader("💾 Télécharger le modèle")
+            if st.button("📥 Télécharger le modèle DL"):
+                if "Images" in st.session_state.data_type:
+                    model_name = "cnn_model.h5"
+                else:
+                    model_name = "dense_model.h5"
+                
+                dl_trainer.model.save(model_name)
+                with open(model_name, 'rb') as f:
+                    st.download_button(
+                        label="💾 Télécharger",
+                        data=f,
+                        file_name=model_name,
+                        mime="application/octet-stream"
+                    )
+        
+        # Bouton pour ré-entraîner
+        st.divider()
+        if st.button("🔄 Ré-entraîner avec d'autres paramètres"):
+            st.session_state.trained = False
+            st.rerun()
 
-if __name__ == "__main__":
+
+if _name_ == "_main_":
     main()
-
-
-
