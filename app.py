@@ -1,4 +1,4 @@
-*import streamlit as st
+import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -593,3 +593,4 @@ def train_model(model_name, problem_type, data_type):
 
 if _name_ == "_main_":
     main()
+
