@@ -16,4 +16,4 @@ matplotlib
 # Data handling
 openpyxl
 Pillow
-
+opencv
