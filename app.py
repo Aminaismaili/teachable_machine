@@ -701,8 +701,6 @@ def main():
                                                 </div>
                                             </div>
                                         """, unsafe_allow_html=True)
-                                    col_counter += 1
-                            
                             # ARCHITECTURE CNN (tout le code d'affichage CNN ici)
                             if has_architecture:
                                 st.markdown("---")
@@ -1079,4 +1077,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
