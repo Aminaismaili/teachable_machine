@@ -1,19 +1,19 @@
-# 🧠 Teachable Machine - Dark Mode
+# 🧠 Teachable Machine 
 
 Une application web interactive pour entraîner des modèles de Machine Learning avec une interface dark mode moderne.
 
-## 🌟 Fonctionnalités
+##  Fonctionnalités
 
-### 📊 Types de Données Supportés
+###  Types de Données Supportés
 - **Données tabulaires** (CSV, Excel)
 - **Images** (JPG, PNG, BMP, TIFF)
 - **Capture caméra** (simulation et upload)
 
-### 🎯 Types de Problèmes
+###  Types de Problèmes
 - **Classification** (Catégorielle)
 - **Régression** (Numérique)
 
-### 🤖 Algorithmes Implémentés
+###  Algorithmes Implémentés
 
 #### Classification
 - **Linear Models** : Logistic Regression, SGD Classifier, Perceptron
@@ -30,7 +30,7 @@ Une application web interactive pour entraîner des modèles de Machine Learning
 - **Neighbors** : KNN Regressor, Radius Neighbors
 - **Neural Networks** : MLP Regressor, Simple NN, Deep NN
 
-## 🛠 Technologies Utilisées
+##  Technologies Utilisées
 
 - **Streamlit** - Interface web interactive
 - **Pandas** - Manipulation des données
@@ -39,7 +39,7 @@ Une application web interactive pour entraîner des modèles de Machine Learning
 - **XGBoost & LightGBM** - Algorithmes boosting
 - **Pillow** - Traitement d'images
 
-## 📋 Processus d'Utilisation
+##  Processus d'Utilisation
 
 ### Étape 1: Upload des Données
 - **Choisissez votre type de données** (tabular, images, caméra)
@@ -62,7 +62,7 @@ Une application web interactive pour entraîner des modèles de Machine Learning
 - **Visualisations interactives**
 - **Architecture des réseaux de neurones**
 
-## 🚀 Démarrage Rapide
+##  Démarrage Rapide
 
 ### Utilisation avec GitHub Codespaces
 
