@@ -11,7 +11,7 @@ import os
 
 # Configuration de la page
 st.set_page_config(
-    page_title="Teachable Machine - Dark Mode",
+    page_title="Teachable Machine",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -289,14 +289,14 @@ def main():
             </div>
         """, unsafe_allow_html=True)
         
-        st.markdown("*Entraîner vos modèles de Machine Learning avec des données tabulaires ou des images*")
+        st.markdown("Entraîner vos modèles de Machine Learning avec des données tabulaires ou des images")
         
         # Modules dans la sidebar
         st.markdown("### Modules")
         
         module_steps = [
             {"icon": "📁", "label": "Upload Data", "step": 1},
-            {"icon": "⚙️", "label": "Configuration", "step": 2},
+            {"icon": "⚙", "label": "Configuration", "step": 2},
             {"icon": "🚀", "label": "Entraînement", "step": 3},
             {"icon": "📊", "label": "Résultats", "step": 4}
         ]
@@ -320,7 +320,7 @@ def main():
             st.markdown("""
                 <div class="error-card">
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="font-size: 1.2rem;">⚠️</span>
+                        <span style="font-size: 1.2rem;">⚠</span>
                         <span><strong>Error</strong></span>
                     </div>
                     <p style="margin: 0.5rem 0 0 0; color: #FCA5A5;">Entraîner d'abord un modèle</p>
@@ -365,7 +365,7 @@ def main():
     if st.session_state.step == 1:
         st.markdown("## 📁 Upload des Données")
         
-        tab1, tab2, tab3 = st.tabs(["📊 Données Tabulaires", "🖼️ Images", "📷 Caméra"])
+        tab1, tab2, tab3 = st.tabs(["📊 Données Tabulaires", "🖼 Images", "📷 Caméra"])
         
         with tab1:
             st.markdown("### Données CSV/Excel")
@@ -519,7 +519,7 @@ def main():
 
     # Étape 2: Configuration
     elif st.session_state.step == 2 and st.session_state.problem_type:
-        st.markdown("## ⚙️ Configuration")
+        st.markdown("## ⚙ Configuration")
         
         # Aperçu du dataset
         st.markdown("### Aperçu du Dataset")
@@ -628,7 +628,7 @@ def main():
                     })
                     
                 except Exception as e:
-                    st.warning(f"⚠️ Erreur pour {model_name}: {str(e)}")
+                    st.warning(f"⚠ Erreur pour {model_name}: {str(e)}")
                     continue
             
             # Vérifier qu'on a des données
@@ -706,7 +706,7 @@ def main():
                             # ARCHITECTURE CNN
                             if has_architecture:
                                 st.markdown("---")
-                                st.markdown("### 🏗️ Architecture du Modèle CNN")
+                                st.markdown("### 🏗 Architecture du Modèle CNN")
                                 
                                 arch = model_data['architecture']
                                 
@@ -837,12 +837,12 @@ def main():
             st.markdown("""
                 <div class="error-card">
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="font-size: 1.2rem;">⚠️</span>
+                        <span style="font-size: 1.2rem;">⚠</span>
                         <span><strong>Aucun modèle entraîné</strong></span>
                     </div>
                     <p style="margin: 0.5rem 0 0 0; color: #FCA5A5;">Veuillez d'abord entraîner au moins un modèle dans l'onglet Entraînement</p>
                 </div>
             """, unsafe_allow_html=True)
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     main()
