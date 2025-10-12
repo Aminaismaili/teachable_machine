@@ -1,4 +1,4 @@
-# 🧠 Teachable Machine 
+#  Teachable Machine 
 
 Une application web interactive pour entraîner des modèles de Machine Learning avec une interface dark mode moderne.
 
