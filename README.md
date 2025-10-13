@@ -7,7 +7,6 @@ Une application web interactive pour entraîner des modèles de Machine Learning
 ###  Types de Données Supportés
 - **Données tabulaires** (CSV, Excel)
 - **Images** (JPG, PNG, BMP, TIFF)
-- **Capture caméra** (simulation et upload)
 
 ###  Types de Problèmes
 - **Classification** (Catégorielle)
