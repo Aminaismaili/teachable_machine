@@ -1,0 +1,401 @@
+surface_m2,nombre_pieces,etage,annee_construction,quartier,proximite_metro,balcon,parking,etat,prix_euros
+132,1,8,1966,Est,Oui,Non,Oui,A rénover,468000
+209,1,0,1958,Nord,Oui,Non,Non,A rénover,668000
+122,4,4,1964,Sud,Non,Non,Oui,A rénover,417000
+44,4,3,1973,Nord,Non,Non,Oui,Bon,223000
+136,6,12,1987,Nord,Oui,Oui,Oui,A rénover,562000
+101,5,11,1984,Sud,Non,Non,Non,Bon,428000
+218,6,12,1998,Ouest,Oui,Oui,Non,A rénover,780000
+50,5,12,2018,Ouest,Oui,Oui,Oui,A rénover,309000
+132,6,13,2011,Nord,Non,Non,Oui,Neuf,598000
+151,3,2,2009,Sud,Non,Non,Non,Bon,530000
+240,4,12,1999,Sud,Oui,Non,Non,Neuf,899000
+244,1,5,1958,Est,Oui,Oui,Non,Neuf,884000
+104,5,1,1983,Ouest,Oui,Non,Non,Neuf,455000
+232,5,2,1984,Centre,Oui,Non,Non,Bon,912000
+117,1,4,1950,Ouest,Non,Oui,Non,Bon,373000
+146,6,14,1989,Ouest,Non,Non,Non,A rénover,479000
+129,5,8,2013,Est,Non,Oui,Non,Neuf,570000
+133,3,1,1971,Centre,Non,Non,Non,A rénover,486000
+181,4,9,2009,Est,Non,Oui,Oui,Neuf,717000
+160,1,7,2013,Centre,Oui,Non,Oui,Bon,652000
+179,4,13,2021,Nord,Non,Non,Oui,Bon,674000
+82,5,1,1960,Centre,Non,Oui,Non,Bon,434000
+31,5,10,1963,Est,Non,Oui,Oui,Neuf,314000
+117,1,12,2009,Ouest,Non,Non,Non,Bon,398000
+187,3,4,1979,Centre,Non,Oui,Non,Neuf,729000
+67,2,6,1984,Centre,Oui,Oui,Oui,A rénover,301000
+159,1,7,1986,Sud,Oui,Oui,Non,Neuf,599000
+221,2,0,1954,Ouest,Oui,Oui,Oui,A rénover,727000
+217,6,5,1975,Nord,Non,Non,Oui,Neuf,870000
+50,2,0,2011,Est,Oui,Non,Oui,A rénover,229000
+190,3,1,1953,Nord,Oui,Oui,Non,Bon,683000
+233,6,14,1991,Ouest,Non,Oui,Oui,A rénover,828000
+87,2,0,1967,Centre,Non,Oui,Non,Bon,365000
+51,6,10,1989,Centre,Non,Oui,Oui,Bon,400000
+118,2,4,2021,Ouest,Oui,Non,Oui,A rénover,421000
+78,3,9,1988,Centre,Oui,Non,Oui,Neuf,466000
+248,2,14,1963,Centre,Non,Oui,Non,Neuf,872000
+88,2,8,1981,Centre,Non,Oui,Non,Neuf,384000
+199,2,5,2000,Est,Oui,Oui,Non,Neuf,745000
+249,1,10,1987,Est,Oui,Non,Oui,Neuf,894000
+217,1,10,1972,Sud,Non,Oui,Oui,Bon,702000
+237,1,0,2012,Nord,Non,Non,Non,Neuf,755000
+44,3,12,1964,Ouest,Oui,Oui,Non,Bon,232000
+219,6,0,1974,Ouest,Non,Non,Non,Bon,780000
+219,5,1,1966,Ouest,Oui,Oui,Non,Bon,795000
+204,2,8,2015,Sud,Oui,Non,Non,A rénover,675000
+219,2,2,2002,Est,Oui,Oui,Non,A rénover,729000
+80,3,14,2000,Sud,Oui,Oui,Oui,Bon,366000
+137,2,0,1988,Ouest,Non,Oui,Non,A rénover,418000
+84,1,4,2000,Nord,Non,Non,Oui,Neuf,317000
+93,5,6,2019,Centre,Oui,Oui,Oui,Neuf,574000
+160,4,5,1955,Est,Oui,Non,Non,Bon,643000
+80,2,11,2016,Est,Oui,Non,Non,Neuf,351000
+164,1,0,1956,Sud,Oui,Oui,Oui,Bon,601000
+50,4,4,2000,Est,Oui,Oui,Non,Bon,307000
+102,5,14,2021,Ouest,Non,Oui,Non,Neuf,489000
+196,4,4,1991,Ouest,Non,Non,Oui,A rénover,656000
+47,1,5,2013,Sud,Non,Oui,Oui,Neuf,234000
+161,6,2,1964,Ouest,Non,Non,Oui,Neuf,665000
+118,6,4,1978,Nord,Oui,Non,Non,Bon,499000
+89,4,6,1982,Sud,Oui,Oui,Oui,Bon,460000
+43,3,4,1976,Nord,Oui,Oui,Non,Bon,245000
+38,4,4,1985,Centre,Oui,Oui,Oui,Bon,374000
+119,2,4,1978,Nord,Oui,Oui,Oui,A rénover,427000
+82,2,9,1987,Centre,Non,Oui,Oui,A rénover,314000
+159,6,9,2006,Centre,Oui,Oui,Non,A rénover,638000
+113,3,2,1976,Nord,Non,Non,Non,Bon,353000
+121,1,0,2004,Sud,Non,Non,Oui,Bon,382000
+140,2,4,1982,Ouest,Non,Non,Oui,Bon,497000
+217,6,13,2017,Ouest,Non,Oui,Oui,A rénover,785000
+228,5,8,2015,Centre,Oui,Non,Non,Bon,861000
+201,6,13,1959,Centre,Non,Non,Oui,Neuf,853000
+37,2,0,1954,Sud,Non,Non,Non,Neuf,177000
+204,2,2,2023,Est,Non,Non,Oui,Bon,700000
+64,6,12,1987,Nord,Oui,Non,Oui,Neuf,452000
+235,1,12,1962,Centre,Oui,Oui,Oui,Neuf,921000
+110,4,3,1980,Ouest,Oui,Oui,Oui,A rénover,451000
+193,2,13,1996,Sud,Non,Non,Oui,Bon,631000
+79,6,0,2001,Nord,Non,Non,Oui,Bon,334000
+133,6,0,2005,Sud,Oui,Non,Non,A rénover,511000
+161,3,7,1964,Nord,Non,Oui,Oui,Neuf,607000
+31,4,1,1978,Nord,Oui,Oui,Non,Neuf,249000
+163,5,11,1957,Centre,Oui,Non,Oui,Bon,708000
+83,1,14,1954,Sud,Non,Oui,Oui,Neuf,347000
+135,5,7,1978,Sud,Non,Oui,Non,A rénover,466000
+33,4,6,1996,Ouest,Non,Non,Oui,A rénover,150000
+83,4,9,2017,Ouest,Non,Oui,Non,Bon,361000
+220,4,9,1994,Centre,Oui,Oui,Non,A rénover,818000
+175,5,1,1951,Centre,Oui,Non,Oui,A rénover,674000
+247,4,5,1976,Est,Oui,Oui,Non,Bon,925000
+73,6,5,1985,Ouest,Oui,Oui,Non,A rénover,359000
+191,5,2,1985,Nord,Oui,Non,Oui,A rénover,691000
+231,4,10,1975,Sud,Non,Oui,Non,A rénover,752000
+219,6,1,1992,Centre,Oui,Oui,Oui,Neuf,965000
+43,3,11,1976,Sud,Oui,Non,Oui,Bon,283000
+124,4,0,2018,Sud,Oui,Non,Oui,Bon,542000
+77,5,5,1969,Est,Non,Non,Oui,Bon,353000
+44,2,11,1960,Ouest,Non,Oui,Non,Neuf,236000
+229,4,4,2023,Centre,Non,Non,Oui,Neuf,869000
+235,2,13,1987,Sud,Non,Oui,Oui,Bon,790000
+244,6,13,1955,Centre,Oui,Non,Non,Neuf,988000
+219,3,10,2021,Nord,Oui,Oui,Oui,Bon,802000
+69,1,8,1972,Est,Non,Non,Oui,Neuf,299000
+242,3,0,1996,Nord,Non,Non,Non,A rénover,693000
+237,4,14,1995,Centre,Oui,Non,Non,A rénover,834000
+111,2,14,1961,Centre,Oui,Non,Non,Bon,472000
+140,2,6,1962,Ouest,Non,Oui,Non,Neuf,521000
+82,5,14,2011,Sud,Non,Non,Non,Neuf,373000
+53,2,4,2009,Sud,Non,Non,Non,A rénover,181000
+183,5,4,1992,Nord,Non,Oui,Non,A rénover,590000
+246,6,13,2017,Est,Oui,Non,Oui,Neuf,1011000
+217,1,1,1954,Sud,Oui,Oui,Non,Neuf,781000
+153,4,10,1986,Ouest,Oui,Non,Non,Neuf,623000
+70,5,2,2021,Nord,Non,Non,Non,Neuf,385000
+186,1,6,1980,Nord,Non,Non,Oui,Neuf,610000
+44,2,5,1958,Ouest,Oui,Oui,Oui,Neuf,322000
+74,2,11,2000,Est,Oui,Non,Non,Bon,347000
+94,1,1,1978,Ouest,Oui,Non,Non,Neuf,384000
+118,2,5,1989,Est,Oui,Non,Non,A rénover,435000
+100,6,1,1990,Ouest,Non,Oui,Oui,Bon,463000
+38,6,1,1960,Ouest,Oui,Oui,Oui,Neuf,372000
+117,1,1,1972,Centre,Oui,Non,Non,A rénover,426000
+158,5,13,1950,Nord,Oui,Oui,Oui,Bon,647000
+165,5,14,1995,Ouest,Oui,Non,Non,A rénover,620000
+245,1,10,1970,Ouest,Oui,Non,Oui,Neuf,890000
+92,5,2,1985,Sud,Oui,Non,Oui,Neuf,458000
+168,5,14,2003,Nord,Oui,Non,Non,Neuf,716000
+110,6,1,2006,Sud,Non,Non,Non,Neuf,463000
+165,5,3,1950,Nord,Non,Non,Non,Bon,601000
+192,3,8,2012,Sud,Non,Non,Non,Bon,666000
+192,4,5,2003,Ouest,Non,Oui,Oui,A rénover,635000
+62,2,0,2004,Ouest,Oui,Oui,Oui,Neuf,359000
+152,3,7,1989,Centre,Non,Oui,Oui,A rénover,537000
+34,5,14,1964,Sud,Non,Oui,Non,Bon,211000
+70,6,11,1970,Est,Oui,Oui,Oui,Neuf,463000
+57,1,13,1996,Centre,Oui,Oui,Non,Neuf,366000
+164,5,6,2022,Sud,Non,Oui,Oui,Bon,668000
+230,6,9,2002,Sud,Non,Non,Non,Bon,844000
+101,4,2,1958,Centre,Oui,Non,Non,Bon,469000
+41,5,0,2023,Ouest,Non,Non,Oui,Bon,259000
+191,1,4,2001,Sud,Oui,Non,Non,Bon,615000
+62,6,12,2006,Ouest,Oui,Oui,Non,Neuf,406000
+77,6,3,1975,Centre,Oui,Oui,Oui,Bon,510000
+180,6,9,1990,Ouest,Oui,Non,Non,Neuf,791000
+91,4,7,1984,Nord,Non,Non,Non,Neuf,360000
+245,5,0,2012,Est,Oui,Oui,Non,Bon,906000
+66,4,9,1974,Sud,Oui,Non,Oui,Bon,352000
+128,2,0,1987,Est,Non,Non,Oui,Neuf,507000
+201,2,11,1951,Ouest,Oui,Non,Non,Bon,677000
+133,5,3,1956,Sud,Non,Non,Oui,Bon,529000
+243,4,7,1983,Ouest,Non,Oui,Non,Bon,821000
+248,1,4,1966,Nord,Non,Non,Non,A rénover,702000
+64,6,1,1992,Centre,Oui,Non,Non,Neuf,467000
+222,6,5,2008,Sud,Non,Oui,Non,A rénover,758000
+130,5,4,2000,Nord,Non,Oui,Non,Bon,491000
+204,2,1,2003,Nord,Oui,Non,Oui,A rénover,671000
+235,2,12,1973,Sud,Non,Oui,Non,Bon,758000
+160,6,13,1974,Ouest,Non,Non,Oui,A rénover,573000
+30,5,10,2020,Nord,Non,Non,Oui,Bon,209000
+34,4,10,2001,Est,Non,Oui,Non,A rénover,194000
+247,2,10,2019,Nord,Non,Non,Non,A rénover,741000
+171,4,2,1982,Ouest,Oui,Non,Oui,A rénover,619000
+132,2,14,1998,Ouest,Non,Non,Oui,Neuf,525000
+56,2,8,1978,Est,Non,Non,Oui,A rénover,187000
+166,3,6,2012,Nord,Oui,Oui,Non,Neuf,684000
+236,2,6,1971,Ouest,Oui,Oui,Oui,Bon,850000
+44,1,14,1975,Sud,Oui,Non,Non,A rénover,150000
+119,5,10,1977,Centre,Non,Oui,Non,Bon,532000
+71,5,5,1998,Centre,Oui,Non,Non,Bon,386000
+153,4,7,2020,Centre,Non,Non,Oui,A rénover,551000
+234,2,3,1998,Nord,Non,Non,Non,Neuf,753000
+208,1,7,1969,Est,Oui,Non,Non,A rénover,656000
+92,4,3,2012,Ouest,Oui,Non,Non,Bon,453000
+125,3,7,2010,Sud,Non,Oui,Non,Bon,502000
+81,4,8,1998,Sud,Oui,Non,Non,A rénover,341000
+125,4,2,2020,Nord,Non,Oui,Oui,Neuf,544000
+161,2,2,1950,Centre,Oui,Oui,Non,Neuf,637000
+180,3,10,1962,Nord,Oui,Non,Non,Bon,627000
+172,4,12,2000,Est,Oui,Non,Oui,Bon,670000
+200,1,1,2005,Est,Non,Non,Non,Neuf,664000
+58,1,12,2011,Ouest,Oui,Non,Oui,A rénover,228000
+65,5,9,1981,Ouest,Non,Non,Non,Bon,292000
+42,3,2,1979,Est,Non,Oui,Oui,Neuf,237000
+189,3,2,1978,Est,Non,Non,Oui,Bon,678000
+100,5,4,1998,Est,Non,Non,Non,A rénover,343000
+216,4,4,1994,Nord,Oui,Oui,Non,Neuf,832000
+115,3,1,1979,Est,Non,Oui,Non,Bon,472000
+57,1,11,1965,Sud,Non,Non,Oui,A rénover,146000
+95,1,9,1989,Centre,Oui,Oui,Oui,Bon,397000
+199,2,12,1968,Est,Non,Non,Oui,A rénover,615000
+74,3,5,1967,Centre,Oui,Oui,Non,A rénover,368000
+91,4,4,1950,Nord,Non,Oui,Oui,Neuf,457000
+214,5,5,1996,Centre,Oui,Non,Oui,A rénover,797000
+163,5,0,2015,Nord,Non,Oui,Non,Bon,612000
+57,4,4,1987,Sud,Oui,Oui,Oui,A rénover,284000
+57,6,8,2000,Nord,Non,Oui,Oui,A rénover,274000
+137,2,11,2012,Nord,Non,Oui,Non,Neuf,556000
+73,5,9,1953,Ouest,Oui,Oui,Oui,A rénover,330000
+113,3,13,1950,Est,Oui,Oui,Non,A rénover,424000
+59,2,1,1957,Est,Oui,Non,Non,Bon,283000
+219,3,0,1978,Sud,Oui,Non,Non,Neuf,830000
+104,1,13,2004,Sud,Non,Oui,Non,Neuf,395000
+157,2,9,1952,Est,Non,Non,Non,Neuf,563000
+121,5,12,1981,Ouest,Oui,Non,Oui,A rénover,487000
+246,2,10,1959,Est,Non,Non,Oui,Neuf,855000
+219,2,8,2023,Ouest,Oui,Oui,Non,A rénover,720000
+158,2,9,1983,Sud,Oui,Non,Non,A rénover,528000
+150,6,8,2004,Centre,Non,Oui,Oui,Bon,659000
+56,2,14,1981,Sud,Non,Non,Non,Bon,217000
+219,3,8,1999,Sud,Non,Oui,Non,Bon,736000
+150,1,5,1956,Nord,Non,Oui,Non,Bon,494000
+145,4,14,1957,Nord,Non,Non,Oui,Bon,526000
+234,2,7,2014,Nord,Non,Non,Oui,A rénover,680000
+32,5,13,2006,Nord,Non,Oui,Non,A rénover,183000
+132,2,10,2016,Ouest,Oui,Non,Non,Neuf,521000
+227,5,14,2008,Est,Oui,Non,Oui,A rénover,810000
+229,3,12,2021,Centre,Oui,Non,Oui,A rénover,819000
+184,5,0,2003,Sud,Oui,Oui,Non,Bon,750000
+166,4,9,2016,Ouest,Oui,Oui,Non,A rénover,564000
+91,1,3,2000,Centre,Non,Non,Oui,Bon,436000
+194,5,0,1957,Ouest,Oui,Non,Oui,Neuf,820000
+80,5,7,1983,Ouest,Oui,Non,Oui,Neuf,466000
+201,1,0,1984,Sud,Oui,Oui,Non,A rénover,639000
+181,4,2,1981,Est,Oui,Oui,Oui,Neuf,770000
+236,2,12,1995,Nord,Oui,Non,Non,A rénover,753000
+88,5,3,1965,Est,Oui,Non,Oui,Neuf,500000
+147,1,14,2017,Sud,Oui,Non,Oui,Bon,556000
+189,3,14,1986,Sud,Non,Non,Oui,Bon,656000
+125,1,14,2003,Sud,Non,Non,Oui,Bon,422000
+245,3,7,1963,Centre,Oui,Non,Non,Bon,890000
+209,4,5,2004,Est,Non,Oui,Non,A rénover,684000
+142,2,13,1997,Est,Non,Non,Oui,Neuf,568000
+91,1,9,1956,Ouest,Non,Oui,Non,A rénover,271000
+215,6,11,2023,Ouest,Non,Non,Oui,Bon,746000
+81,5,6,1956,Ouest,Oui,Non,Oui,A rénover,383000
+41,4,13,1982,Sud,Non,Oui,Oui,Neuf,288000
+68,1,7,1972,Est,Non,Oui,Oui,A rénover,223000
+159,5,1,1968,Sud,Non,Oui,Non,Neuf,623000
+160,1,12,1968,Centre,Oui,Oui,Oui,A rénover,611000
+142,3,9,1985,Ouest,Oui,Non,Oui,Neuf,627000
+130,1,13,1978,Sud,Oui,Oui,Non,Neuf,500000
+142,6,10,2009,Sud,Oui,Non,Oui,Bon,636000
+213,1,7,1951,Centre,Oui,Oui,Oui,Neuf,815000
+110,1,2,1950,Nord,Oui,Non,Oui,Bon,383000
+216,6,6,1996,Est,Oui,Non,Non,Bon,820000
+142,4,2,2018,Nord,Non,Non,Oui,Bon,547000
+31,1,14,1969,Ouest,Non,Non,Non,A rénover,86000
+159,6,6,1960,Sud,Non,Non,Oui,A rénover,579000
+249,5,13,1951,Centre,Oui,Non,Oui,A rénover,932000
+83,3,10,2016,Centre,Oui,Oui,Non,A rénover,393000
+116,3,14,1961,Est,Oui,Non,Oui,Neuf,518000
+158,1,11,1969,Nord,Oui,Oui,Oui,Neuf,622000
+176,4,12,1954,Est,Oui,Oui,Non,A rénover,645000
+155,4,1,1986,Sud,Non,Non,Non,Neuf,602000
+159,5,9,1987,Est,Non,Oui,Non,Neuf,668000
+82,1,5,1958,Centre,Oui,Non,Non,Bon,377000
+201,3,2,2002,Centre,Oui,Oui,Non,Bon,791000
+247,4,2,1993,Ouest,Oui,Non,Oui,Bon,926000
+189,1,14,1973,Ouest,Oui,Oui,Non,Bon,656000
+227,4,8,2023,Sud,Non,Non,Oui,Neuf,818000
+189,6,6,1979,Nord,Oui,Non,Oui,A rénover,700000
+97,4,4,2008,Est,Oui,Non,Oui,Neuf,488000
+212,3,11,1963,Sud,Oui,Non,Non,Neuf,770000
+232,2,9,1958,Ouest,Oui,Oui,Non,Neuf,840000
+213,5,6,1989,Est,Non,Non,Oui,Bon,761000
+152,5,8,2015,Ouest,Oui,Oui,Non,Bon,628000
+174,3,0,1974,Est,Oui,Oui,Non,Bon,619000
+67,4,6,2022,Nord,Non,Oui,Non,A rénover,250000
+53,1,5,1971,Sud,Non,Non,Non,Neuf,218000
+98,4,9,1953,Est,Non,Oui,Oui,A rénover,353000
+145,3,13,1975,Centre,Oui,Oui,Oui,Bon,648000
+127,5,11,2007,Centre,Oui,Oui,Non,A rénover,571000
+227,4,8,1978,Est,Non,Non,Oui,Neuf,805000
+243,5,0,1986,Est,Non,Non,Non,Neuf,866000
+168,1,12,2019,Est,Non,Oui,Non,Bon,543000
+173,5,3,1967,Centre,Non,Non,Oui,Bon,674000
+126,5,8,1991,Centre,Non,Non,Oui,A rénover,523000
+230,2,3,1990,Est,Non,Oui,Oui,Bon,779000
+153,2,9,1987,Ouest,Oui,Oui,Non,Bon,566000
+216,6,2,1983,Ouest,Oui,Non,Oui,Neuf,850000
+99,2,8,1966,Nord,Oui,Oui,Non,Bon,403000
+237,5,12,1986,Sud,Non,Non,Oui,Bon,814000
+122,3,1,1974,Ouest,Non,Non,Oui,Neuf,497000
+32,5,14,1976,Centre,Non,Non,Non,Neuf,292000
+177,3,3,2006,Ouest,Non,Non,Non,A rénover,580000
+216,3,14,1980,Nord,Non,Non,Non,Bon,673000
+193,2,5,1955,Nord,Non,Non,Non,Neuf,585000
+176,4,1,1989,Sud,Oui,Oui,Non,A rénover,630000
+119,1,14,1961,Ouest,Oui,Oui,Non,A rénover,430000
+224,2,7,2002,Centre,Non,Non,Non,Bon,792000
+176,2,7,2020,Centre,Oui,Non,Non,Bon,681000
+177,4,0,1959,Est,Non,Non,Oui,A rénover,583000
+125,1,11,1994,Centre,Oui,Oui,Non,Neuf,570000
+228,5,2,1966,Sud,Non,Non,Non,A rénover,713000
+81,6,9,1975,Sud,Non,Oui,Oui,Bon,413000
+190,6,8,2011,Centre,Oui,Non,Non,Neuf,848000
+197,5,4,1995,Centre,Oui,Non,Oui,Neuf,881000
+157,2,5,2013,Est,Non,Oui,Oui,A rénover,574000
+68,1,3,1951,Centre,Non,Oui,Non,Bon,292000
+111,2,9,2003,Est,Oui,Non,Oui,A rénover,404000
+133,3,1,2014,Est,Oui,Non,Non,A rénover,476000
+158,2,10,2000,Centre,Non,Non,Oui,A rénover,509000
+40,2,7,2002,Nord,Oui,Oui,Oui,Neuf,272000
+249,5,10,1985,Nord,Non,Oui,Oui,Neuf,911000
+214,5,12,1975,Est,Non,Oui,Non,Bon,757000
+246,5,5,1978,Centre,Non,Oui,Non,Bon,907000
+207,6,4,1970,Nord,Non,Oui,Oui,A rénover,704000
+180,3,8,1960,Centre,Oui,Oui,Oui,A rénover,710000
+188,5,0,1989,Centre,Oui,Non,Non,A rénover,717000
+71,1,4,1960,Centre,Oui,Non,Non,Bon,330000
+128,6,5,1985,Ouest,Oui,Oui,Oui,Neuf,635000
+36,4,4,2008,Centre,Oui,Non,Oui,Neuf,363000
+173,1,5,1988,Ouest,Oui,Non,Non,A rénover,563000
+119,1,5,2003,Est,Oui,Oui,Non,A rénover,390000
+141,5,6,2004,Nord,Non,Non,Non,A rénover,456000
+89,4,3,1973,Nord,Oui,Oui,Non,A rénover,346000
+142,4,13,1971,Nord,Oui,Oui,Non,Bon,533000
+31,6,10,2018,Nord,Non,Non,Oui,Neuf,260000
+158,4,13,2005,Nord,Oui,Oui,Non,A rénover,556000
+77,3,13,1982,Nord,Oui,Oui,Oui,Bon,390000
+169,5,13,1985,Nord,Non,Oui,Non,A rénover,569000
+226,4,14,1969,Est,Oui,Oui,Oui,A rénover,811000
+66,6,7,2011,Centre,Oui,Oui,Non,Neuf,497000
+189,3,6,2022,Sud,Oui,Oui,Non,A rénover,649000
+38,2,8,1975,Ouest,Non,Oui,Oui,Neuf,247000
+128,2,6,2015,Sud,Oui,Oui,Oui,Neuf,560000
+176,3,2,2022,Sud,Oui,Non,Non,Neuf,693000
+77,6,2,2022,Centre,Non,Non,Non,Bon,399000
+237,3,14,1989,Centre,Oui,Non,Non,Bon,825000
+160,5,7,1966,Centre,Non,Oui,Non,Neuf,681000
+177,5,4,1950,Nord,Non,Oui,Non,A rénover,610000
+181,2,3,2010,Est,Oui,Non,Oui,Neuf,734000
+83,4,7,1992,Nord,Non,Non,Oui,A rénover,317000
+149,6,14,1991,Est,Non,Non,Non,Neuf,645000
+190,2,5,1974,Est,Oui,Oui,Oui,A rénover,662000
+181,4,1,1988,Sud,Non,Non,Oui,Bon,655000
+145,4,3,1984,Sud,Non,Non,Oui,A rénover,480000
+104,5,11,1952,Est,Oui,Oui,Non,Neuf,516000
+142,1,10,1993,Est,Oui,Non,Oui,Bon,547000
+229,1,3,2000,Nord,Oui,Oui,Non,A rénover,741000
+193,3,14,1961,Nord,Non,Oui,Oui,A rénover,614000
+195,5,5,1968,Sud,Oui,Oui,Non,A rénover,690000
+133,4,5,1993,Centre,Non,Non,Oui,A rénover,508000
+113,6,0,2008,Est,Non,Non,Non,A rénover,438000
+141,1,13,1998,Nord,Non,Oui,Non,Bon,424000
+246,4,7,2010,Sud,Non,Non,Oui,Bon,804000
+128,1,5,1966,Nord,Non,Non,Non,Bon,381000
+182,1,2,2023,Est,Non,Non,Non,Bon,561000
+122,1,13,2006,Est,Non,Non,Non,Neuf,432000
+175,6,8,2004,Ouest,Oui,Oui,Non,Bon,718000
+157,5,1,1996,Centre,Oui,Non,Non,A rénover,616000
+139,6,14,1961,Ouest,Non,Oui,Non,A rénover,533000
+111,2,10,2011,Sud,Non,Oui,Non,Bon,402000
+223,4,7,1957,Nord,Oui,Non,Non,A rénover,742000
+83,5,9,1970,Sud,Non,Oui,Oui,Bon,401000
+192,5,2,2019,Est,Oui,Non,Oui,A rénover,697000
+237,5,12,2021,Ouest,Oui,Non,Non,Neuf,936000
+218,5,11,1974,Ouest,Oui,Oui,Non,Neuf,862000
+198,6,4,1961,Ouest,Non,Oui,Oui,Bon,770000
+190,5,5,1964,Sud,Non,Oui,Oui,Bon,687000
+97,3,9,2008,Est,Oui,Oui,Oui,Bon,427000
+62,4,5,1975,Nord,Oui,Non,Non,A rénover,273000
+171,5,3,1975,Nord,Oui,Non,Oui,Bon,686000
+50,4,2,1996,Sud,Oui,Non,Non,Neuf,306000
+77,3,3,1981,Ouest,Oui,Oui,Non,A rénover,295000
+177,3,0,1959,Centre,Non,Oui,Oui,Bon,701000
+157,4,3,1965,Sud,Oui,Oui,Non,A rénover,540000
+165,1,0,2020,Sud,Non,Non,Non,A rénover,507000
+164,2,11,1966,Est,Oui,Oui,Non,Bon,587000
+224,1,14,1972,Nord,Non,Non,Non,A rénover,644000
+174,1,0,1975,Sud,Non,Oui,Oui,Neuf,616000
+157,6,9,1956,Sud,Non,Non,Oui,Neuf,664000
+62,1,13,1963,Ouest,Non,Non,Non,A rénover,148000
+205,5,5,1956,Ouest,Non,Oui,Non,Bon,728000
+233,6,4,1958,Centre,Non,Oui,Oui,A rénover,857000
+216,6,13,1997,Est,Oui,Non,Non,Neuf,853000
+144,3,10,2021,Centre,Non,Non,Oui,A rénover,541000
+243,1,14,2008,Ouest,Oui,Oui,Non,A rénover,766000
+148,3,3,1988,Nord,Non,Oui,Non,Neuf,547000
+51,4,12,1967,Ouest,Non,Non,Oui,A rénover,192000
+187,2,10,2008,Est,Oui,Oui,Oui,A rénover,607000
+67,6,2,1966,Ouest,Non,Non,Oui,Bon,346000
+138,4,0,1963,Est,Oui,Non,Oui,Bon,625000
+80,4,5,1980,Est,Oui,Oui,Non,Neuf,452000
+211,5,1,1973,Est,Oui,Oui,Oui,Neuf,872000
+37,2,7,2009,Est,Oui,Oui,Non,Neuf,268000
+56,4,9,1994,Est,Non,Oui,Oui,Bon,302000
+56,4,4,1952,Nord,Non,Oui,Oui,Neuf,325000
+50,2,6,1986,Centre,Oui,Non,Non,Neuf,309000
+59,2,9,1992,Sud,Non,Non,Oui,Neuf,308000
+126,4,11,1989,Centre,Non,Oui,Oui,Bon,565000
+57,2,1,2004,Est,Oui,Oui,Oui,A rénover,281000
+140,4,12,1988,Nord,Non,Oui,Oui,Neuf,582000
+221,4,7,1964,Ouest,Oui,Non,Non,A rénover,746000
+226,5,1,1953,Nord,Oui,Oui,Non,Neuf,882000
+90,1,3,1974,Est,Non,Oui,Oui,A rénover,302000
+77,4,0,1962,Nord,Non,Non,Oui,Bon,317000
+176,3,14,1982,Nord,Non,Non,Oui,Bon,593000
+33,6,4,1965,Est,Oui,Oui,Non,Neuf,334000
+64,1,8,1991,Nord,Oui,Oui,Non,A rénover,251000
