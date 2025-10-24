@@ -6,7 +6,7 @@ Une application web professionnelle permettant de créer, entraîner et évaluer
 
 ---
 
-## 📋 Table des matières
+##  Table des matières
 
 - [Fonctionnalités](#-fonctionnalités)
 - [Installation](#-installation)
@@ -19,9 +19,9 @@ Une application web professionnelle permettant de créer, entraîner et évaluer
 
 ---
 
-## ✨ Fonctionnalités
+##  Fonctionnalités
 
-### 🎯 Principales
+###  Principales
 
 - **Interface No-Code** : Aucune compétence en programmation requise
 - **Workflow guidé** : Processus en 4 étapes simples et intuitives
@@ -31,7 +31,7 @@ Une application web professionnelle permettant de créer, entraîner et évaluer
 - **Visualisations avancées** : Graphiques interactifs Plotly
 - **Export professionnel** : CSV, JSON et rapports détaillés
 
-### 📊 Types de problèmes
+###  Types de problèmes
 
 - ✅ **Classification** (données tabulaires)
 - ✅ **Régression** (données tabulaires)
@@ -39,7 +39,7 @@ Une application web professionnelle permettant de créer, entraîner et évaluer
 
 ---
 
-## 🚀 Installation
+##  Installation
 
 ### Prérequis
 
@@ -90,7 +90,7 @@ http://localhost:8501
 
 ---
 
-## 📊 Types de données supportés
+##  Types de données supportés
 
 ### 1. Données Tabulaires
 
@@ -103,10 +103,10 @@ http://localhost:8501
 - **Régression** : Prédire des valeurs numériques (Prix immobilier, Température, Score)
 
 #### Preprocessing automatique
-- 🔧 **StandardScaler** pour les features numériques
-- 🎯 **OneHotEncoder** pour les features catégorielles
-- 📊 **LabelEncoder** pour la target (classification)
-- 📈 **Split 80/20** avec stratification (classification)
+-  **StandardScaler** pour les features numériques
+-  **OneHotEncoder** pour les features catégorielles
+-  **LabelEncoder** pour la target (classification)
+-  **Split 80/20** avec stratification (classification)
 
 ### 2. Images
 
@@ -127,10 +127,10 @@ dataset.zip
 ```
 
 #### Preprocessing automatique
-- 📐 **Redimensionnement** : 64x64, 128x128, 224x224, ou 256x256 pixels
-- 🌈 **Normalisation** : Pixels de [0, 255] vers [0, 1]
-- 🎯 **Encodage** : One-hot encoding des labels
-- 📈 **Split 80/20** : Train/Test
+-  **Redimensionnement** : 64x64, 128x128, 224x224, ou 256x256 pixels
+-  **Normalisation** : Pixels de [0, 255] vers [0, 1]
+-  **Encodage** : One-hot encoding des labels
+-  **Split 80/20** : Train/Test
 
 ---
 
@@ -184,23 +184,23 @@ dataset.zip
 
 ### Classification (12 modèles)
 
-- 📊 **Logistic Regression** | **SGD Classifier**
-- 🌳 **Decision Tree** | **Random Forest** | **Extra Trees** | **Gradient Boosting** | **AdaBoost**
-- 🔍 **SVM (Linear)** | **SVM (RBF)**
-- 📈 **Gaussian NB** | **KNN**
-- 🧠 **MLP Classifier**
+-  **Logistic Regression** | **SGD Classifier**
+-  **Decision Tree** | **Random Forest** | **Extra Trees** | **Gradient Boosting** | **AdaBoost**
+-  **SVM (Linear)** | **SVM (RBF)**
+-  **Gaussian NB** | **KNN**
+-  **MLP Classifier**
 
 ### Régression (12 modèles)
 
-- 📊 **Linear Regression** | **Ridge** | **Lasso** | **SGD Regressor**
-- 🌳 **Decision Tree** | **Random Forest** | **Extra Trees** | **Gradient Boosting**
-- 🔍 **SVR (Linear)** | **SVR (RBF)**
-- 📈 **KNN Regressor**
-- 🧠 **MLP Regressor**
+-  **Linear Regression** | **Ridge** | **Lasso** | **SGD Regressor**
+-  **Decision Tree** | **Random Forest** | **Extra Trees** | **Gradient Boosting**
+-  **SVR (Linear)** | **SVR (RBF)**
+-  **KNN Regressor**
+-  **MLP Regressor**
 
 ### Classification d'Images
 
-- 🧠 **CNN personnalisé** :
+-  **CNN personnalisé** :
   - Conv2D (32) + MaxPooling
   - Conv2D (64) + MaxPooling
   - Conv2D (64)
@@ -239,20 +239,20 @@ dataset.zip
 
 ---
 
-## 🏗️ Architecture technique
+##  Architecture technique
 
 ### Stack technologique
 
 **Backend** :
-- 🐍 Python 3.8+
-- 📚 Scikit-learn (ML classique)
-- 🧠 TensorFlow/Keras (Deep Learning)
-- 📊 Pandas/Numpy (Data processing)
+-  Python 3.8+
+-  Scikit-learn (ML classique)
+-  TensorFlow/Keras (Deep Learning)
+-  Pandas/Numpy (Data processing)
 
 **Frontend** :
-- 🎨 Streamlit (Framework web)
-- 📈 Plotly (Visualisations)
-- 🖼️ PIL (Traitement d'images)
+-  Streamlit (Framework web)
+-  Plotly (Visualisations)
+-  PIL (Traitement d'images)
 
 ### Structure
 
@@ -291,7 +291,7 @@ teachable-machine/
 
 ---
 
-## 💡 Recommandations
+##  Recommandations
 
 ### Pour améliorer les performances
 
@@ -321,7 +321,7 @@ teachable-machine/
 
 ---
 
-## 👨‍💻 Auteur
+##  Auteur
 
 **Projet ISMAILI AMINA Elève Ingénieure IA & Data Science**
 - 🎓 5ème année
