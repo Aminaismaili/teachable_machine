@@ -1,20 +1,8 @@
-# Core
 streamlit
 pandas
 numpy
-
-# ML Libraries
-scikit-learn
-xgboost
-
-# Deep Learning
-tensorflow-cpu
-
-# Visualization
 plotly
-matplotlib
-# Data handling
-openpyxl
+scikit-learn
+tensorflow
 Pillow
-opencv-python-headless
-
+openpyxl
