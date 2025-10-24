@@ -325,7 +325,7 @@ teachable-machine/
 
 **Projet ISMAILI AMINA Elève Ingénieure IA & Data Science**
 - 🎓 5ème année
-- 📅 2024
+- 📅 2025
 
 ---
 
